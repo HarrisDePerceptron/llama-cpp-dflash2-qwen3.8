@@ -7,15 +7,15 @@ echo "Hello world. loading dfalsh 2 model.."
 "$DIR/llama.cpp/build/bin/llama-server" \
     --host 0.0.0.0 \
     --port 8001 \
-    --metrics  \
+    --metrics \
     -hf ggml-org/Qwen3.8-27B-GGUF:Q4_K_M \
     -hfd incoai/Qwen3.8-27B-DFlash2-GGUF:Q4_K_M \
     --spec-type draft-dflash \
     --spec-draft-n-max 4 \
-    --no-mmproj  \
+    --no-mmproj \
     --ctx-size 70000 \
     --flash-attn on \
-    --kv-unified  \
+    --kv-unified \
     --reasoning on \
     --reasoning-effort low \
     --cache-type-k q4_0 \
