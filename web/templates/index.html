@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>localllm</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['"Google Sans"', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      },
+      colors: {
+        gemini: { blue: '#4285f8', purple: '#a142f4', pink: '#ec407a', amber: '#f9ab00' },
+      },
+    },
+  },
+}
+</script>
+<style>
+  .gemini-gradient { background-image: linear-gradient(90deg, #4285f8 0%, #a142f4 35%, #ec407a 70%, #f9ab00 100%); }
+  .gemini-gradient-135 { background-image: linear-gradient(135deg, #4285f8 0%, #a142f4 35%, #ec407a 70%, #f9ab00 100%); }
+  .console { scrollbar-width: thin; scrollbar-color: #3f3f46 transparent; }
+  .console::-webkit-scrollbar { width: 8px; height: 8px; }
+  .console::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 8px; }
+  .console::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body class="bg-zinc-950 text-zinc-200 min-h-screen antialiased">
+
+<header class="sticky top-0 z-10 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
+    <svg class="w-6 h-6 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="gem" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#4285f8"/>
+          <stop offset="0.35" stop-color="#a142f4"/>
+          <stop offset="0.7" stop-color="#ec407a"/>
+          <stop offset="1" stop-color="#f9ab00"/>
+        </linearGradient>
+      </defs>
+      <path d="M12 1.5c.9 4.9 5.6 9.6 10.5 10.5-4.9.9-9.6 5.6-10.5 10.5-.9-4.9-5.6-9.6-10.5-10.5C6.4 11.1 11.1 6.4 12 1.5Z" fill="url(#gem)"/>
+    </svg>
+    <span class="text-[15px] font-semibold tracking-tight text-white">localllm</span>
+    <span id="status-pill" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ring-1 ring-inset bg-zinc-800/60 text-zinc-400 ring-zinc-700/60">
+      <span class="w-1.5 h-1.5 rounded-full bg-current"></span>checking…
+    </span>
+    <div id="instance" class="ml-auto text-xs text-zinc-500 font-mono truncate"></div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+    <!-- GPU -->
+    <section class="lg:col-span-2 bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 transition-colors hover:border-zinc-700/80">
+      <div class="flex items-center gap-2 mb-4">
+        <svg class="w-4 h-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">GPU</h2>
+      </div>
+      <div id="gpus" class="space-y-4"></div>
+    </section>
+
+    <!-- System -->
+    <section class="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 transition-colors hover:border-zinc-700/80">
+      <div class="flex items-center gap-2 mb-4">
+        <svg class="w-4 h-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">System</h2>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-sm text-zinc-400">CPU</span>
+            <span class="text-xs font-mono text-zinc-300" id="sys-cpu">…</span>
+          </div>
+          <div class="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div id="sys-cpu-bar" class="h-full gemini-gradient rounded-full transition-[width] duration-500" style="width:0%"></div></div>
+          <div class="mt-1 text-[11px] text-zinc-600" id="sys-load"></div>
+        </div>
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-sm text-zinc-400">RAM</span>
+            <span class="text-xs font-mono text-zinc-300" id="sys-mem">…</span>
+          </div>
+          <div class="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div id="sys-mem-bar" class="h-full gemini-gradient rounded-full transition-[width] duration-500" style="width:0%"></div></div>
+        </div>
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-zinc-400">Swap</span>
+          <span class="text-xs font-mono text-zinc-300" id="sys-swap">…</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Service -->
+    <section class="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 transition-colors hover:border-zinc-700/80">
+      <div class="flex items-center gap-2 mb-4">
+        <svg class="w-4 h-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.8 0"/></svg>
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Service</h2>
+      </div>
+      <div class="flex items-center gap-2.5 mb-4">
+        <span id="svc-dot" class="w-2 h-2 rounded-full bg-zinc-600 shrink-0"></span>
+        <span id="svc-state" class="text-sm text-zinc-300">…</span>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="svcAction('start')" class="px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition">Start</button>
+        <button onclick="svcAction('stop')" class="px-3.5 py-1.5 text-sm font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition">Stop</button>
+        <button onclick="uninstall()" class="px-3.5 py-1.5 text-sm font-medium rounded-lg text-red-400 ring-1 ring-inset ring-red-500/30 hover:bg-red-500/10 transition ml-auto">Uninstall</button>
+      </div>
+      <pre id="svc-detail" class="console hidden mt-3 text-xs text-zinc-400 whitespace-pre-wrap max-h-24 overflow-auto bg-black/40 border border-zinc-800 rounded-lg p-2 font-mono"></pre>
+    </section>
+
+    <!-- Llama server -->
+    <section class="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 transition-colors hover:border-zinc-700/80">
+      <div class="flex items-center gap-2 mb-4">
+        <svg class="w-4 h-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="7" rx="2"/><rect x="2" y="14" width="20" height="7" rx="2"/><path d="M6 6.5h.01M6 17.5h.01"/></svg>
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Llama server</h2>
+        <span class="ml-auto flex items-center gap-1.5 text-xs text-zinc-400">
+          <span id="srv-dot" class="w-2 h-2 rounded-full bg-zinc-600"></span>
+          <span id="srv-state">…</span>
+        </span>
+      </div>
+      <dl class="space-y-2.5 text-sm">
+        <div class="flex items-center justify-between gap-3">
+          <dt class="text-xs text-zinc-500">url</dt>
+          <dd class="font-mono text-xs text-zinc-300 truncate" id="srv-url">…</dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="text-xs text-zinc-500">model</dt>
+          <dd class="font-mono text-xs text-zinc-300 truncate" id="srv-model">…</dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="text-xs text-zinc-500">draft</dt>
+          <dd class="font-mono text-xs text-zinc-300 truncate" id="srv-draft">…</dd>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <dt class="text-xs text-zinc-500">ctx / ngl</dt>
+          <dd class="font-mono text-xs text-zinc-300" id="srv-ctx">…</dd>
+        </div>
+      </dl>
+      <div class="mt-4">
+        <div class="text-xs text-zinc-500 mb-1.5">loaded models</div>
+        <div id="srv-models" class="flex flex-wrap gap-1.5"></div>
+      </div>
+    </section>
+
+    <!-- Agents -->
+    <section class="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 transition-colors hover:border-zinc-700/80">
+      <div class="flex items-center gap-2 mb-4">
+        <svg class="w-4 h-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7V4M8 4h8"/><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M2 13h2M20 13h2M9.5 12v2M14.5 12v2"/></svg>
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Agents</h2>
+      </div>
+      <div class="space-y-2.5 text-sm mb-4">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-zinc-400">opencode</span>
+          <span class="font-mono text-xs text-zinc-300" id="ag-oc">…</span>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-zinc-400">llama-server provider</span>
+          <span class="font-mono text-xs text-zinc-300" id="ag-provider">…</span>
+        </div>
+      </div>
+      <button onclick="opencodeSetup()" class="w-full px-3.5 py-2 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition">Configure opencode</button>
+      <pre id="oc-job" class="console hidden mt-3 text-xs text-zinc-400 whitespace-pre-wrap max-h-40 overflow-auto bg-black/40 border border-zinc-800 rounded-lg p-2 font-mono"></pre>
+    </section>
+
+    <!-- Setup -->
+    <section class="bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 transition-colors hover:border-zinc-700/80">
+      <div class="flex items-center gap-2 mb-4">
+        <svg class="w-4 h-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Setup</h2>
+      </div>
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <span class="flex items-center gap-2">
+          <span id="setup-dot" class="w-2 h-2 rounded-full bg-zinc-600"></span>
+          <span id="setup-state" class="text-sm text-zinc-300">…</span>
+        </span>
+        <button onclick="runSetup()" class="px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition">Run setup</button>
+      </div>
+      <pre id="setup-job" class="console hidden text-xs text-zinc-400 whitespace-pre-wrap max-h-48 overflow-auto bg-black/40 border border-zinc-800 rounded-lg p-2 font-mono"></pre>
+    </section>
+
+    <!-- Logs -->
+    <section class="lg:col-span-3 bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 transition-colors hover:border-zinc-700/80">
+      <div class="flex items-center gap-2 mb-4">
+        <svg class="w-4 h-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 17 6-6-6-6M12 19h8"/></svg>
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">Logs</h2>
+        <span class="text-xs text-zinc-600 font-mono">llama-dflash · journal</span>
+      </div>
+      <pre id="logs" class="console bg-black/60 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-300 font-mono whitespace-pre-wrap h-72 overflow-auto"></pre>
+    </section>
+
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function j(url, opts) { const r = await fetch(url, opts); return r.json(); }
+async function post(url) { return j(url, { method: 'POST' }); }
+
+const fmtGB = (mb) => mb == null ? '—' : (mb / 1024).toFixed(1) + ' GB';
+const pct = (part, total) => total > 0 ? Math.max(0, Math.min(100, (part / total) * 100)) : 0;
+
+function dot(el, on, color) { el.className = el.className.replace(/bg-\S+/g, '').trim() + ' ' + (on ? color : 'bg-zinc-600'); }
+
+function renderStatusPill(svc, srv) {
+  const el = $('status-pill');
+  let cls, text;
+  if (svc.active === 'active' && srv.up) { cls = 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20'; text = 'all systems go'; }
+  else if (svc.active === 'active' || srv.up) { cls = 'bg-amber-500/10 text-amber-400 ring-amber-500/20'; text = 'degraded'; }
+  else { cls = 'bg-red-500/10 text-red-400 ring-red-500/20'; text = 'down'; }
+  el.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ring-1 ring-inset ' + cls;
+  el.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-current"></span>' + text;
+}
+
+function renderService(s) {
+  const on = s.active === 'active';
+  $('svc-dot').className = 'w-2 h-2 rounded-full shrink-0 ' + (on ? 'bg-emerald-500' : 'bg-zinc-600');
+  $('svc-state').textContent = s.installed ? `${s.active} (${s.enabled})` : 'unit not installed';
+}
+
+function renderSystem(s) {
+  $('sys-cpu').textContent = `${s.cpu_percent}%`;
+  $('sys-cpu-bar').style.width = s.cpu_percent + '%';
+  $('sys-load').textContent = s.load_avg ? `load ${s.load_avg.map(x => x.toFixed(2)).join('  ')}` : '';
+  $('sys-mem').textContent = `${s.mem_used_gb} / ${s.mem_total_gb} GB`;
+  $('sys-mem-bar').style.width = s.mem_percent + '%';
+  $('sys-swap').textContent = `${s.swap_used_gb} / ${s.swap_total_gb} GB`;
+}
+
+function renderGpus(gpus) {
+  const el = $('gpus');
+  if (!gpus || !gpus.length) {
+    el.innerHTML = '<div class="text-sm text-zinc-600">no NVIDIA GPU detected</div>';
+    return;
+  }
+  el.innerHTML = gpus.map(g => {
+    const model = g.model_mem_mb || 0;
+    const other = Math.max(0, (g.mem_used_mb || 0) - model);
+    const util = g.util_percent != null ? g.util_percent : 0;
+    return `
+    <div class="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-sm font-medium text-zinc-100">${esc(g.name)} <span class="text-zinc-600 font-normal">· GPU ${g.index}</span></span>
+        <span class="text-xs text-zinc-500 font-mono">${g.temp_c != null ? g.temp_c + '°C' : ''}${g.power_w != null ? ' · ' + g.power_w.toFixed(0) + ' W' : ''}</span>
+      </div>
+      <div class="space-y-2.5">
+        <div class="flex items-center gap-3">
+          <span class="text-[11px] uppercase tracking-wide text-zinc-500 w-12">util</span>
+          <div class="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="h-full gemini-gradient rounded-full transition-[width] duration-500" style="width:${util}%"></div></div>
+          <span class="text-xs font-mono text-zinc-300 w-10 text-right">${g.util_percent != null ? g.util_percent + '%' : '—'}</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-[11px] uppercase tracking-wide text-zinc-500 w-12">vram</span>
+          <div class="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden flex">
+            <div class="h-full gemini-gradient transition-[width] duration-500" style="width:${pct(model, g.mem_total_mb)}%"></div>
+            <div class="h-full bg-zinc-600 transition-[width] duration-500" style="width:${pct(other, g.mem_total_mb)}%"></div>
+          </div>
+          <span class="text-xs font-mono text-zinc-300 w-28 text-right">${(g.mem_used_mb / 1024).toFixed(1)} / ${(g.mem_total_mb / 1024).toFixed(1)} GB</span>
+        </div>
+      </div>
+      <div class="mt-2.5 pl-[3.75rem] text-[11px] text-zinc-500 flex flex-wrap items-center gap-x-4 gap-y-1">
+        <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-[3px] gemini-gradient"></span>model ${fmtGB(model)}</span>
+        <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-[3px] bg-zinc-600"></span>other ${fmtGB(other)}</span>
+        <span>free ${fmtGB(Math.max(0, g.mem_total_mb - (g.mem_used_mb || 0)))}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderServer(s) {
+  $('srv-dot').className = 'w-2 h-2 rounded-full ' + (s.up ? 'bg-emerald-500' : 'bg-zinc-600');
+  $('srv-state').textContent = s.up ? 'up' : 'down';
+  const c = s.configured || {};
+  $('srv-url').textContent = s.url;
+  $('srv-model').textContent = c.model || '—';
+  $('srv-draft').textContent = c.draft || '—';
+  $('srv-ctx').textContent = c.ctx_size ? `${c.ctx_size} / ${c.ngl ?? '—'}` : '—';
+  const ids = s.model_ids || [];
+  $('srv-models').innerHTML = s.up && ids.length
+    ? ids.map(m => `<span class="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 text-[11px] font-mono break-all">${esc(m)}</span>`).join('')
+    : '<span class="text-xs text-zinc-600">server down</span>';
+}
+
+function renderAgents(a) {
+  $('ag-oc').textContent = a.opencode_installed ? (a.opencode_version || 'installed') : 'not installed';
+  $('ag-provider').textContent = a.provider_configured ? 'configured' : 'not configured';
+}
+
+function renderInstance(i) {
+  $('instance').textContent = `${i.path} [${i.mode}]`;
+}
+
+function renderJob(el, job) {
+  el.textContent = job.output.join('\n');
+  el.classList.toggle('hidden', job.output.length === 0);
+  if (job.output.length) el.scrollTop = el.scrollHeight;
+}
+
+let logsPinned = true;
+$('logs').addEventListener('scroll', () => {
+  const el = $('logs');
+  logsPinned = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+});
+
+async function refresh() {
+  try {
+    const s = await j('/api/state');
+    renderInstance(s.instance);
+    renderService(s.service);
+    renderSystem(s.system);
+    renderGpus(s.gpus);
+    renderServer(s.server);
+    renderAgents(s.agents);
+    renderStatusPill(s.service, s.server);
+    const built = s.instance.built;
+    $('setup-dot').className = 'w-2 h-2 rounded-full ' + (built ? 'bg-emerald-500' : 'bg-zinc-600');
+    $('setup-state').textContent = built ? 'llama.cpp built' : 'llama.cpp not built';
+    const logs = await j('/api/logs?lines=200');
+    const el = $('logs');
+    el.textContent = logs.lines.join('\n');
+    if (logsPinned) el.scrollTop = el.scrollHeight;
+    renderJob($('setup-job'), await j('/api/jobs/setup'));
+    renderJob($('oc-job'), await j('/api/jobs/opencode'));
+  } catch (e) { /* transient */ }
+}
+
+async function svcAction(action) {
+  const r = await post(`/api/service/${action}`);
+  const el = $('svc-detail');
+  el.textContent = r.detail || (r.ok ? 'ok' : 'failed');
+  el.classList.remove('hidden');
+  refresh();
+}
+
+async function uninstall() {
+  const msg = 'Uninstall the stack?\n\n- stops and removes the llama-dflash systemd service\n- deletes llama.cpp/ (the build)\n- removes the llama-server provider from opencode\n(the opencode binary is kept)';
+  if (!confirm(msg)) return;
+  const r = await post('/api/service/uninstall');
+  alert(r.steps.join('\n'));
+  refresh();
+}
+
+async function runSetup() {
+  await post('/api/setup');
+  refresh();
+}
+
+async function opencodeSetup() {
+  await post('/api/opencode-setup');
+  refresh();
+}
+
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>
