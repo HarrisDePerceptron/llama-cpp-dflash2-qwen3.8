@@ -33,7 +33,7 @@ else
 fi
 echo "==> Backend: $BACKEND"
 
-cmake -B "$SRC/build" -DCMAKE_BUILD_TYPE=Release -D$BACKEND=ON
+cmake -S "$SRC" -B "$SRC/build" -DCMAKE_BUILD_TYPE=Release -D$BACKEND=ON
 cmake --build "$SRC/build" -j
 
 echo "==> Done: $SRC/build/bin/llama-server"
