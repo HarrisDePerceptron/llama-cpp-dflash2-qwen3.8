@@ -1,0 +1,15 @@
+{% from "partials/_macros.html" import icon_card, icon_card_end %}
+{{ icon_card('<path d="M12 7V4M8 4h8"/><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M2 13h2M20 13h2M9.5 12v2M14.5 12v2"/>', 'Agents') }}
+<div class="space-y-2.5 text-sm mb-4">
+  <div class="flex items-center justify-between gap-3">
+    <span class="text-zinc-400">opencode</span>
+    <span class="font-mono text-xs text-zinc-300" id="ag-oc">…</span>
+  </div>
+  <div class="flex items-center justify-between gap-3">
+    <span class="text-zinc-400">llama-server provider</span>
+    <span class="font-mono text-xs text-zinc-300" id="ag-provider">…</span>
+  </div>
+</div>
+<button onclick="opencodeSetup()" class="w-full px-3.5 py-2 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition">Configure opencode</button>
+<pre id="oc-job" class="console hidden mt-3 text-xs text-zinc-400 whitespace-pre-wrap max-h-40 overflow-auto bg-black/40 border border-zinc-800 rounded-lg p-2 font-mono"></pre>
+{{ icon_card_end() }}

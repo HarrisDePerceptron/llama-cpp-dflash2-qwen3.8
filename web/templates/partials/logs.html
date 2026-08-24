@@ -1,0 +1,4 @@
+{% from "partials/_macros.html" import icon_card, icon_card_end %}
+{{ icon_card('<path d="m4 17 6-6-6-6M12 19h8"/>', 'Logs', status_html='<span class="text-xs text-zinc-600 font-mono">llama-dflash · journal</span>', col_span='lg:col-span-3') }}
+<pre id="logs" class="console bg-black/60 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-300 font-mono whitespace-pre-wrap h-96 overflow-auto"></pre>
+{{ icon_card_end() }}

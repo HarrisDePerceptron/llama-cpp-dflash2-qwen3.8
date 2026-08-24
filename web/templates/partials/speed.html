@@ -1,0 +1,29 @@
+{% from "partials/_macros.html" import icon_card, icon_card_end %}
+{{ icon_card('<path d="M12 20V10M18 20V4M6 20v-4"/>', 'Speed', status_html='<span class="ml-auto text-[10px] font-mono text-zinc-600" id="spd-live-badge"></span>') }}
+<div class="grid grid-cols-2 gap-4 mb-4">
+  <div class="rounded-xl bg-zinc-950/60 border border-zinc-800 p-3.5">
+    <div class="text-[10px] uppercase tracking-wider text-zinc-500 mb-2">prompt</div>
+    <div class="text-2xl font-semibold font-mono text-zinc-100" id="spd-prompt">—</div>
+    <div class="text-[11px] text-zinc-600 mt-0.5">tok/s</div>
+  </div>
+  <div class="rounded-xl bg-zinc-950/60 border border-zinc-800 p-3.5">
+    <div class="text-[10px] uppercase tracking-wider text-zinc-500 mb-2">predict</div>
+    <div class="text-2xl font-semibold font-mono text-zinc-100" id="spd-predict">—</div>
+    <div class="text-[11px] text-zinc-600 mt-0.5">tok/s</div>
+  </div>
+</div>
+<div class="flex items-center gap-2 mb-2">
+  <span class="text-[10px] uppercase tracking-wider text-zinc-600">average</span>
+  <div class="flex-1 h-px bg-zinc-800"></div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+  <div class="flex items-baseline justify-between">
+    <span class="text-xs text-zinc-500">prompt</span>
+    <span class="text-sm font-mono text-zinc-400" id="spd-prompt-avg">—</span>
+  </div>
+  <div class="flex items-baseline justify-between">
+    <span class="text-xs text-zinc-500">predict</span>
+    <span class="text-sm font-mono text-zinc-400" id="spd-predict-avg">—</span>
+  </div>
+</div>
+{{ icon_card_end() }}

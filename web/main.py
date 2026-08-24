@@ -8,6 +8,7 @@ from pathlib import Path
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
 from localllm.instance import resolve_instance
 from web import system
@@ -63,13 +64,16 @@ def index(request: Request):
 @app.get("/api/state")
 def api_state():
     inst = resolve_instance()
+    server = system.server_config(inst)
     return {
         "instance": {"path": str(inst.path), "mode": inst.mode, "built": inst.built},
         "service": system.service_status(),
         "system": system.system_stats(),
         "gpus": system.gpu_stats(),
         "agents": system.agents_info(),
-        "server": system.server_config(inst),
+        "server": server,
+        "speed": system.server_speed(server["url"]),
+        "weights": system.model_weights(inst),
     }
 
 
@@ -111,6 +115,42 @@ def api_service_start():
 def api_service_stop():
     inst = resolve_instance()
     rc, out, err = system._run(["bash", str(inst.service_sh), "stop"], timeout=120)
+    return {"ok": rc == 0, "detail": err or out}
+
+
+class ParamIn(BaseModel):
+    name: str
+    value: str = ""
+    is_flag: bool = False
+
+
+class ParamsIn(BaseModel):
+    params: list[ParamIn]
+
+
+@app.get("/api/server/params")
+def api_server_params():
+    inst = resolve_instance()
+    return {
+        "params": system.parse_run_sh_params(inst.run_sh),
+        "raw": system.server_block_raw(inst.run_sh),
+    }
+
+
+@app.post("/api/server/params")
+def api_server_params_save(body: ParamsIn):
+    inst = resolve_instance()
+    try:
+        system.write_run_sh_params(inst.run_sh, [p.model_dump() for p in body.params])
+    except Exception as e:
+        return {"ok": False, "detail": str(e)}
+    return {"ok": True, "detail": "run.sh updated"}
+
+
+@app.post("/api/server/restart")
+def api_server_restart():
+    inst = resolve_instance()
+    rc, out, err = system._run(["bash", str(inst.service_sh), "restart"], timeout=600)
     return {"ok": rc == 0, "detail": err or out}
 
 

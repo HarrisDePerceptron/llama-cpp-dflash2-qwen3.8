@@ -38,6 +38,9 @@ case "${1:-}" in
     stop)
         systemctl --user stop "$UNIT"
         ;;
+    restart)
+        systemctl --user restart "$UNIT"
+        ;;
     status)
         systemctl --user status "$UNIT" --no-pager
         ;;

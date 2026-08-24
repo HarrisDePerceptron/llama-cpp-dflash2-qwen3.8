@@ -1,0 +1,24 @@
+{% from "partials/_macros.html" import icon_card, icon_card_end, bar %}
+{{ icon_card('<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>', 'System') }}
+<div class="space-y-4">
+  <div>
+    <div class="flex items-center justify-between mb-1.5">
+      <span class="text-sm text-zinc-400">CPU</span>
+      <span class="text-xs font-mono text-zinc-300" id="sys-cpu">…</span>
+    </div>
+    {{ bar('sys-cpu-bar') }}
+    <div class="mt-1 text-[11px] text-zinc-600" id="sys-load"></div>
+  </div>
+  <div>
+    <div class="flex items-center justify-between mb-1.5">
+      <span class="text-sm text-zinc-400">RAM</span>
+      <span class="text-xs font-mono text-zinc-300" id="sys-mem">…</span>
+    </div>
+    {{ bar('sys-mem-bar') }}
+  </div>
+  <div class="flex items-center justify-between text-sm">
+    <span class="text-zinc-400">Swap</span>
+    <span class="text-xs font-mono text-zinc-300" id="sys-swap">…</span>
+  </div>
+</div>
+{{ icon_card_end() }}

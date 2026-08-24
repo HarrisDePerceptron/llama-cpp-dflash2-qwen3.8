@@ -1,0 +1,13 @@
+{% from "partials/_macros.html" import icon_card, icon_card_end, dot %}
+{{ icon_card('<path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.8 0"/>', 'Service') }}
+<div class="flex items-center gap-2.5 mb-4">
+  {{ dot('bg-zinc-600', id='svc-dot') }}
+  <span id="svc-state" class="text-sm text-zinc-300">…</span>
+</div>
+<div class="flex gap-2">
+  <button onclick="svcAction('start')" class="px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition">Start</button>
+  <button onclick="svcAction('stop')" class="px-3.5 py-1.5 text-sm font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition">Stop</button>
+  <button onclick="uninstall()" class="px-3.5 py-1.5 text-sm font-medium rounded-lg text-red-400 ring-1 ring-inset ring-red-500/30 hover:bg-red-500/10 transition ml-auto">Uninstall</button>
+</div>
+<pre id="svc-detail" class="console hidden mt-3 text-xs text-zinc-400 whitespace-pre-wrap max-h-24 overflow-auto bg-black/40 border border-zinc-800 rounded-lg p-2 font-mono"></pre>
+{{ icon_card_end() }}

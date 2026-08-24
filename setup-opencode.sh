@@ -19,15 +19,16 @@ python3 - "$CONFIG" <<'EOF'
 import json, os, sys
 
 path = sys.argv[1]
-provider = {
+provider_key = "llama-server"
+model_id = "ggml-org/Qwen3.8-27B-GGUF:Q4_K_M"
+model_entry = {
+    "name": "Qwen3.8 27B Q4_K_M (local)",
+    "attachment": True,
+}
+provider_defaults = {
     "npm": "@ai-sdk/openai-compatible",
     "name": "llama-server (local)",
     "options": {"baseURL": "http://127.0.0.1:8001/v1"},
-    "models": {
-        "ggml-org/Qwen3.8-27B-GGUF:Q4_K_M": {
-            "name": "Qwen3.8 27B Q4_K_M (local)"
-        }
-    },
 }
 
 config = {}
@@ -36,8 +37,23 @@ if os.path.exists(path):
         config = json.load(f)
 
 config.setdefault("$schema", "https://opencode.ai/config.json")
-config.setdefault("provider", {})
-config["provider"]["llama-server"] = provider
+providers = config.setdefault("provider", {})
+
+p = providers.setdefault(provider_key, {})
+for k, v in provider_defaults.items():
+    p.setdefault(k, v)
+models = p.setdefault("models", {})
+
+if model_id in models:
+    print(f"==> Model already configured under '{provider_key}'; nothing to do")
+    sys.exit(0)
+
+for pname, other in providers.items():
+    if pname != provider_key and isinstance(other, dict) and model_id in (other.get("models") or {}):
+        print(f"warning: model '{model_id}' already exists under provider '{pname}'; not adding a duplicate")
+        sys.exit(0)
+
+models[model_id] = model_entry
 
 with open(path, "w") as f:
     json.dump(config, f, indent=2)
