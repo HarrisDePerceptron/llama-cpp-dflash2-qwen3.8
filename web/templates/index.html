@@ -87,6 +87,8 @@ tailwind.config = {
   </div>
 </div>
 
+{% include "partials/log-modal.html" %}
+
 <script>
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -108,10 +110,20 @@ function renderStatusPill(svc, srv) {
   el.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-current"></span>' + text;
 }
 
+let svcDetail = null;
+let svcState = 'idle';
+
 function renderService(s) {
   const on = s.active === 'active';
   $('svc-dot').className = 'w-2 h-2 rounded-full shrink-0 ' + (on ? 'bg-emerald-500' : 'bg-zinc-600');
   $('svc-state').textContent = s.installed ? `${s.active} (${s.enabled})` : 'unit not installed';
+  const btn = $('svc-toggle');
+  const busy = svcState === 'running';
+  btn.textContent = on ? 'Stop' : 'Start';
+  btn.disabled = busy;
+  btn.className = 'px-3.5 py-1.5 text-sm rounded-lg transition ' + (on
+    ? 'font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-200'
+    : 'font-semibold gemini-gradient-135 text-zinc-950 hover:opacity-90') + (busy ? ' opacity-50 cursor-not-allowed' : '');
 }
 
 function renderSystem(s) {
@@ -197,12 +209,6 @@ function renderInstance(i) {
   $('instance').textContent = `${i.path} [${i.mode}]`;
 }
 
-function renderJob(el, job) {
-  el.textContent = job.output.join('\n');
-  el.classList.toggle('hidden', job.output.length === 0);
-  if (job.output.length) el.scrollTop = el.scrollHeight;
-}
-
 let logsPinned = true;
 $('logs').addEventListener('scroll', () => {
   const el = $('logs');
@@ -227,17 +233,30 @@ async function refresh() {
     const el = $('logs');
     el.textContent = logs.lines.join('\n');
     if (logsPinned) el.scrollTop = el.scrollHeight;
-    renderJob($('setup-job'), await j('/api/jobs/setup'));
-    renderJob($('oc-job'), await j('/api/jobs/opencode'));
+    if (logModal) pollLogModal();
   } catch (e) { /* transient */ }
 }
 
+function svcToggle() {
+  if (svcState === 'running') return;
+  svcAction($('svc-toggle').textContent === 'Start' ? 'start' : 'stop');
+}
+
 async function svcAction(action) {
-  const r = await post(`/api/service/${action}`);
-  const el = $('svc-detail');
-  el.textContent = r.detail || (r.ok ? 'ok' : 'failed');
-  el.classList.remove('hidden');
-  refresh();
+  svcState = 'running';
+  svcDetail = null;
+  openLogModal({
+    title: `Service ${action}`,
+    load: async () => ({ state: svcState, output: (svcDetail || '').split('\n') }),
+  });
+  try {
+    const r = await post(`/api/service/${action}`);
+    svcDetail = r.detail || (r.ok ? 'ok' : 'failed');
+    svcState = r.ok ? 'done' : 'error';
+  } catch (e) {
+    svcDetail = String(e.message || e);
+    svcState = 'error';
+  }
 }
 
 async function uninstall() {
@@ -250,12 +269,12 @@ async function uninstall() {
 
 async function runSetup() {
   await post('/api/setup');
-  refresh();
+  openJobModal('setup');
 }
 
 async function opencodeSetup() {
   await post('/api/opencode-setup');
-  refresh();
+  openJobModal('opencode');
 }
 
 // ── Server config modal ──────────────────────────────────────────────
@@ -318,6 +337,85 @@ async function saveServerConfig() {
 
 $('srv-config-modal').addEventListener('click', (e) => {
   if (e.target === $('srv-config-modal')) closeServerConfig();
+});
+
+// ── Reusable terminal log modal ──────────────────────────────────────
+let logModal = null;
+const stripAnsi = (s) => s.replace(/\x1b\[[0-9;]*m/g, '');
+
+const logBadgeStyles = {
+  running: 'bg-amber-500/10 text-amber-400 ring-amber-500/20',
+  done: 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20',
+  error: 'bg-red-500/10 text-red-400 ring-red-500/20',
+};
+
+function setLogModalBadge(state) {
+  const badge = $('log-modal-badge');
+  if (!state || state === 'idle') { badge.classList.add('hidden'); return; }
+  badge.textContent = state;
+  badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-mono ring-1 ring-inset ' + (logBadgeStyles[state] || 'bg-zinc-800/60 text-zinc-400 ring-zinc-700/60');
+}
+
+function openLogModal({ title, load }) {
+  logModal = { load, follow: true, last: '' };
+  $('log-modal-title').textContent = title;
+  $('log-modal-body').textContent = '';
+  setLogModalBadge(null);
+  const modal = $('log-modal');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  pollLogModal();
+}
+
+function closeLogModal() {
+  logModal = null;
+  const modal = $('log-modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+async function pollLogModal() {
+  if (!logModal) return;
+  try {
+    const snap = await logModal.load();
+    if (!logModal) return;
+    const out = stripAnsi((snap.output || []).join('\n'));
+    const body = $('log-modal-body');
+    const pinned = body.scrollHeight - body.scrollTop - body.clientHeight < 40;
+    body.textContent = out;
+    if (logModal.follow && (pinned || out !== logModal.last)) body.scrollTop = body.scrollHeight;
+    logModal.last = out;
+    setLogModalBadge(snap.state);
+  } catch (e) { /* transient */ }
+}
+
+function openJobModal(which) {
+  const titles = { setup: 'Setup', opencode: 'Configure opencode' };
+  openLogModal({ title: titles[which], load: () => j('/api/jobs/' + which) });
+}
+
+function copyLogModal() {
+  const text = $('log-modal-body').textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = $('log-modal-copy');
+    btn.title = 'Copied';
+    setTimeout(() => { btn.title = 'Copy logs'; }, 1500);
+  });
+}
+
+$('log-modal-body').addEventListener('scroll', () => {
+  if (!logModal) return;
+  const el = $('log-modal-body');
+  logModal.follow = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+});
+
+$('log-modal').addEventListener('click', (e) => {
+  if (e.target === $('log-modal')) closeLogModal();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && logModal) closeLogModal();
 });
 
 refresh();
