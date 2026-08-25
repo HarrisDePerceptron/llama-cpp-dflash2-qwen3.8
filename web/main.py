@@ -148,7 +148,34 @@ def api_logs(lines: int = Query(200, ge=1, le=2000)):
 @app.post("/api/setup")
 def api_setup():
     inst = resolve_instance()
-    return {"started": setup_job.start(["bash", str(inst.setup_sh)], inst.path)}
+    unit = system.unit_for(inst.mode)
+
+    def run(emit) -> int:
+        if inst.built:
+            emit("==> llama-server already built, skipping")
+        else:
+            emit("==> building llama-server (setup.sh)…")
+            rc = system.run_streamed(["bash", str(inst.setup_sh)], inst.path, emit)
+            if rc != 0:
+                emit(f"[localllm] setup.sh failed with exit code {rc}")
+                return rc
+        if system.service_status(unit)["installed"]:
+            emit(f"==> {unit}.service already installed, skipping")
+        else:
+            emit(f"==> installing {unit}.service…")
+            rc = system.run_streamed(
+                ["bash", str(inst.service_sh), "install"],
+                inst.path,
+                emit,
+                extra_env={"LLAMA_UNIT": unit, "LLAMA_INSTALL_START": "0"},
+            )
+            if rc != 0:
+                emit(f"[localllm] service install failed with exit code {rc}")
+                return rc
+        emit("==> setup complete")
+        return 0
+
+    return {"started": setup_job.start(fn=run)}
 
 
 @app.get("/api/jobs/setup")
@@ -186,6 +213,11 @@ def _svc(inst, action: str, timeout: float) -> tuple[int, str, str]:
 @app.post("/api/service/start")
 def api_service_start():
     inst = resolve_instance()
+    unit = system.unit_for(inst.mode)
+    if not system.service_status(unit)["installed"]:
+        rc, out, err = _svc(inst, "install", timeout=120)
+        if rc != 0:
+            return {"ok": False, "detail": f"install failed: {err or out}"}
     rc, out, err = _svc(inst, "start", timeout=600)
     return {"ok": rc == 0, "detail": err or out}
 

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Jinja Template Authoring"
+  short_description: "Author and debug reliable Jinja templates"
+  default_prompt: "Use $jinja-template-authoring to create or improve this Jinja template."
+
+policy:
+  allow_implicit_invocation: true

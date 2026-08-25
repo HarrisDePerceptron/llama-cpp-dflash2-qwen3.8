@@ -7,6 +7,12 @@
       "skillPath": "fastapi/.agents/skills/fastapi/SKILL.md",
       "computedHash": "e85d9e223fbc3183b1a599bbe8b02d2edf275d046ff5bcfd14352c92cdff52b3"
     },
+    "jinja-template-authoring": {
+      "source": "harrisdeperceptron/skill-jinja",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/jinja-template-authoring/SKILL.md",
+      "computedHash": "80384916f2a9bf96909f16524b0d01e971c23d3c4625bea088c23931ec3b684e"
+    },
     "tailwind-design-system": {
       "source": "wshobson/agents",
       "sourceType": "github",

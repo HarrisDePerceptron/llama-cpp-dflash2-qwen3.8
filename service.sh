@@ -30,7 +30,11 @@ case "${1:-}" in
     install)
         write_unit
         systemctl --user daemon-reload
-        systemctl --user enable --now "$UNIT"
+        if [ "${LLAMA_INSTALL_START:-1}" = "1" ]; then
+            systemctl --user enable --now "$UNIT"
+        else
+            systemctl --user enable "$UNIT"
+        fi
         ;;
     start)
         systemctl --user start "$UNIT"

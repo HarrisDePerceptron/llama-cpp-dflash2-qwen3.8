@@ -249,10 +249,11 @@ async function refresh() {
     renderAgents(s.agents);
     renderStatusPill(s.service, s.server);
     const built = s.instance.built;
+    const ready = built && s.service.installed;
     const setupJob = await j('/api/jobs/setup');
     setupRunning = setupJob.state === 'running';
-    $('setup-dot').className = 'w-2 h-2 rounded-full ' + (setupRunning ? 'bg-amber-500 animate-pulse' : built ? 'bg-emerald-500' : 'bg-zinc-600');
-    $('setup-state').textContent = setupRunning ? 'setup running…' : built ? 'already set up' : 'not set up';
+    $('setup-dot').className = 'w-2 h-2 rounded-full ' + (setupRunning ? 'bg-amber-500 animate-pulse' : ready ? 'bg-emerald-500' : 'bg-zinc-600');
+    $('setup-state').textContent = setupRunning ? 'setup running…' : ready ? 'already set up' : 'not set up';
     const setupBtn = $('setup-btn');
     if (setupRunning) {
       setupBtn.textContent = 'Stop setup';
@@ -260,8 +261,8 @@ async function refresh() {
       setupBtn.className = 'px-3.5 py-1.5 text-sm font-medium rounded-lg text-red-400 ring-1 ring-inset ring-red-500/30 hover:bg-red-500/10 transition';
     } else {
       setupBtn.textContent = 'Run setup';
-      setupBtn.disabled = built;
-      setupBtn.className = 'px-3.5 py-1.5 text-sm font-semibold rounded-lg transition ' + (built
+      setupBtn.disabled = ready;
+      setupBtn.className = 'px-3.5 py-1.5 text-sm font-semibold rounded-lg transition ' + (ready
         ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
         : 'gemini-gradient-135 text-zinc-950 hover:opacity-90');
     }

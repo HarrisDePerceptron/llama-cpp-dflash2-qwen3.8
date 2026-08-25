@@ -42,6 +42,29 @@ def _run(
         return 1, "", "timeout"
 
 
+def run_streamed(
+    cmd: list[str],
+    cwd: Path,
+    emit=None,
+    extra_env: dict[str, str] | None = None,
+) -> int:
+    env = {**os.environ, **extra_env} if extra_env else None
+    p = subprocess.Popen(
+        cmd,
+        cwd=str(cwd),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        start_new_session=True,
+        env=env,
+    )
+    assert p.stdout is not None
+    for line in p.stdout:
+        if emit is not None:
+            emit(line.rstrip("\n"))
+    return p.wait()
+
+
 def _http_get(url: str, timeout: float = 2.0):
     try:
         with urllib.request.urlopen(url, timeout=timeout) as r:
