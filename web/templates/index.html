@@ -113,6 +113,9 @@ function renderStatusPill(svc, srv) {
 
 let svcDetail = null;
 let svcState = 'idle';
+let setupRunning = false;
+let uninstallRunning = false;
+let ready = false;
 
 function renderService(s) {
   const on = s.active === 'active';
@@ -125,6 +128,27 @@ function renderService(s) {
   btn.className = 'px-3.5 py-1.5 text-sm rounded-lg transition ' + (on
     ? 'font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-200'
     : 'font-semibold gemini-gradient-135 text-zinc-950 hover:opacity-90') + (busy ? ' opacity-50 cursor-not-allowed' : '');
+}
+
+function renderInstallToggle() {
+  const btn = $('install-toggle');
+  if (setupRunning) {
+    btn.textContent = 'Stop install';
+    btn.disabled = false;
+    btn.className = 'px-3.5 py-1.5 text-sm font-medium rounded-lg text-red-400 ring-1 ring-inset ring-red-500/30 hover:bg-red-500/10 transition ml-auto';
+  } else if (uninstallRunning) {
+    btn.textContent = 'Uninstalling…';
+    btn.disabled = true;
+    btn.className = 'px-3.5 py-1.5 text-sm font-medium rounded-lg text-red-400 ring-1 ring-inset ring-red-500/30 opacity-50 cursor-not-allowed transition ml-auto';
+  } else if (ready) {
+    btn.textContent = 'Uninstall';
+    btn.disabled = false;
+    btn.className = 'px-3.5 py-1.5 text-sm font-medium rounded-lg text-red-400 ring-1 ring-inset ring-red-500/30 hover:bg-red-500/10 transition ml-auto';
+  } else {
+    btn.textContent = 'Install';
+    btn.disabled = false;
+    btn.className = 'px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition ml-auto';
+  }
 }
 
 function renderSystem(s) {
@@ -248,24 +272,12 @@ async function refresh() {
     renderSpeed(s.speed);
     renderAgents(s.agents);
     renderStatusPill(s.service, s.server);
-    const built = s.instance.built;
-    const ready = built && s.service.installed;
+    ready = s.instance.built && s.service.installed;
     const setupJob = await j('/api/jobs/setup');
+    const uninstallJob = await j('/api/jobs/uninstall');
     setupRunning = setupJob.state === 'running';
-    $('setup-dot').className = 'w-2 h-2 rounded-full ' + (setupRunning ? 'bg-amber-500 animate-pulse' : ready ? 'bg-emerald-500' : 'bg-zinc-600');
-    $('setup-state').textContent = setupRunning ? 'setup running…' : ready ? 'already set up' : 'not set up';
-    const setupBtn = $('setup-btn');
-    if (setupRunning) {
-      setupBtn.textContent = 'Stop setup';
-      setupBtn.disabled = false;
-      setupBtn.className = 'px-3.5 py-1.5 text-sm font-medium rounded-lg text-red-400 ring-1 ring-inset ring-red-500/30 hover:bg-red-500/10 transition';
-    } else {
-      setupBtn.textContent = 'Run setup';
-      setupBtn.disabled = ready;
-      setupBtn.className = 'px-3.5 py-1.5 text-sm font-semibold rounded-lg transition ' + (ready
-        ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
-        : 'gemini-gradient-135 text-zinc-950 hover:opacity-90');
-    }
+    uninstallRunning = uninstallJob.state === 'running';
+    renderInstallToggle();
     const logs = await j('/api/logs?lines=200');
     const el = $('logs');
     el.textContent = logs.lines.join('\n');
@@ -296,30 +308,28 @@ async function svcAction(action) {
   }
 }
 
-async function uninstall() {
-  const ok = await openConfirm({
-    title: 'Uninstall the stack?',
-    message: `- stops and removes the {{ unit }} systemd service
-- kills any running llama-server process for this instance
-- deletes llama.cpp/ (the build)
-- removes the llama-server provider from opencode
-(the opencode binary is kept)`,
-    confirmLabel: 'Uninstall',
-    danger: true,
-  });
-  if (!ok) return;
-  await post('/api/service/uninstall');
-  openJobModal('uninstall');
-}
-
-let setupRunning = false;
-
-async function setupBtnClick() {
+async function installToggle() {
   if (setupRunning) {
     await post('/api/jobs/setup/stop');
     return;
   }
-  if ($('setup-btn').disabled) return;
+  if (uninstallRunning) return;
+  if (ready) {
+    const ok = await openConfirm({
+      title: 'Uninstall the stack?',
+      message: `- stops and removes the {{ unit }} systemd service
+- kills any running llama-server process for this instance
+- deletes llama.cpp/ (the build)
+- removes the llama-server provider from opencode
+(the opencode binary is kept)`,
+      confirmLabel: 'Uninstall',
+      danger: true,
+    });
+    if (!ok) return;
+    await post('/api/service/uninstall');
+    openJobModal('uninstall');
+    return;
+  }
   await post('/api/setup');
   openJobModal('setup');
 }
@@ -489,7 +499,7 @@ async function pollLogModal() {
 }
 
 function openJobModal(which) {
-  const titles = { setup: 'Setup', opencode: 'Configure opencode', uninstall: 'Uninstall' };
+  const titles = { setup: 'Install', opencode: 'Configure opencode', uninstall: 'Uninstall' };
   const stopUrl = which === 'uninstall' ? null : '/api/jobs/' + which + '/stop';
   openLogModal({ title: titles[which], load: () => j('/api/jobs/' + which), stopUrl });
 }

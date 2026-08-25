@@ -4,17 +4,8 @@
   {{ dot('bg-zinc-600', id='svc-dot') }}
   <span id="svc-state" class="text-sm text-zinc-300">…</span>
 </div>
-<div class="flex gap-2 mb-4">
+<div class="flex gap-2">
   <button id="svc-toggle" onclick="svcToggle()" class="px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition">Start</button>
-  <button onclick="uninstall()" class="px-3.5 py-1.5 text-sm font-medium rounded-lg text-red-400 ring-1 ring-inset ring-red-500/30 hover:bg-red-500/10 transition ml-auto">Uninstall</button>
-</div>
-<div class="border-t border-zinc-800 pt-4">
-  <div class="flex items-center justify-between gap-3">
-    <span class="flex items-center gap-2">
-      {{ dot('bg-zinc-600', id='setup-dot') }}
-      <span id="setup-state" class="text-sm text-zinc-300">…</span>
-    </span>
-    <button id="setup-btn" onclick="setupBtnClick()" class="px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition">Run setup</button>
-  </div>
+  <button id="install-toggle" onclick="installToggle()" class="px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition ml-auto">Install</button>
 </div>
 {{ icon_card_end() }}
