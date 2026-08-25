@@ -1,3 +1,4 @@
+{% from "partials/_button.html" import button, BTN_BASE, BTN_CLASSES %}
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -74,14 +75,12 @@ tailwind.config = {
   <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg shadow-2xl">
     <div class="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
       <h3 class="text-sm font-semibold text-zinc-100">Server configuration</h3>
-      <button onclick="closeServerConfig()" class="text-zinc-500 hover:text-zinc-300 transition">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
+      {{ button('', variant='icon', onclick='closeServerConfig()', title='Close', icon='<path d="M18 6 6 18M6 6l12 12"/>') }}
     </div>
     <div id="srv-config-body" class="px-5 py-4 max-h-[60vh] overflow-y-auto space-y-3"></div>
     <div class="flex items-center justify-end gap-2 px-5 py-3 border-t border-zinc-800">
-      <button onclick="closeServerConfig()" class="px-3.5 py-1.5 text-sm font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition">Cancel</button>
-      <button onclick="saveServerConfig()" class="px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition">Save &amp; Restart</button>
+      {{ button('Cancel', variant='secondary', onclick='closeServerConfig()') }}
+      {{ button('Save & Restart', id='srv-config-save', onclick='saveServerConfig()') }}
     </div>
   </div>
 </div>
@@ -100,6 +99,14 @@ const fmtBytes = (b) => b >= 2 ** 30 ? (b / 2 ** 30).toFixed(1) + ' GB' : b >= 2
 const pct = (part, total) => total > 0 ? Math.max(0, Math.min(100, (part / total) * 100)) : 0;
 
 function dot(el, on, color) { el.className = el.className.replace(/bg-\S+/g, '').trim() + ' ' + (on ? color : 'bg-zinc-600'); }
+
+const BTN_BASE = {{ BTN_BASE | tojson }};
+const BTN = {{ BTN_CLASSES | tojson }};
+function setBtn(el, variant, label = null, disabled = false) {
+  el.className = BTN_BASE + ' ' + BTN[variant];
+  if (label != null) el.textContent = label;
+  el.disabled = disabled;
+}
 
 function renderStatusPill(svc, srv) {
   const el = $('status-pill');
@@ -121,34 +128,14 @@ function renderService(s) {
   const on = s.active === 'active';
   $('svc-dot').className = 'w-2 h-2 rounded-full shrink-0 ' + (on ? 'bg-emerald-500' : 'bg-zinc-600');
   $('svc-state').textContent = s.installed ? `${s.active} (${s.enabled})` : 'unit not installed';
-  const btn = $('svc-toggle');
-  const busy = svcState === 'running';
-  btn.textContent = on ? 'Stop' : 'Start';
-  btn.disabled = busy;
-  btn.className = 'px-3.5 py-1.5 text-sm rounded-lg transition ' + (on
-    ? 'font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-200'
-    : 'font-semibold gemini-gradient-135 text-zinc-950 hover:opacity-90') + (busy ? ' opacity-50 cursor-not-allowed' : '');
+  setBtn($('svc-toggle'), on ? 'secondary' : 'primary', on ? 'Stop' : 'Start', svcState === 'running');
 }
 
 function renderInstallToggle() {
-  const btn = $('install-toggle');
-  if (setupRunning) {
-    btn.textContent = 'Stop install';
-    btn.disabled = false;
-    btn.className = 'px-3.5 py-1.5 text-sm font-medium rounded-lg text-red-400 ring-1 ring-inset ring-red-500/30 hover:bg-red-500/10 transition ml-auto';
-  } else if (uninstallRunning) {
-    btn.textContent = 'Uninstalling…';
-    btn.disabled = true;
-    btn.className = 'px-3.5 py-1.5 text-sm font-medium rounded-lg text-red-400 ring-1 ring-inset ring-red-500/30 opacity-50 cursor-not-allowed transition ml-auto';
-  } else if (ready) {
-    btn.textContent = 'Uninstall';
-    btn.disabled = false;
-    btn.className = 'px-3.5 py-1.5 text-sm font-medium rounded-lg text-red-400 ring-1 ring-inset ring-red-500/30 hover:bg-red-500/10 transition ml-auto';
-  } else {
-    btn.textContent = 'Install';
-    btn.disabled = false;
-    btn.className = 'px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition ml-auto';
-  }
+  if (setupRunning) setBtn($('install-toggle'), 'danger-ghost', 'Stop install');
+  else if (uninstallRunning) setBtn($('install-toggle'), 'danger-ghost', 'Uninstalling…', true);
+  else if (ready) setBtn($('install-toggle'), 'danger-ghost', 'Uninstall');
+  else setBtn($('install-toggle'), 'primary', 'Install');
 }
 
 function renderSystem(s) {
@@ -381,7 +368,7 @@ async function saveServerConfig() {
       params.push({ name: p.name, value: el.value, is_flag: false });
     }
   });
-  const btn = $('srv-config-modal').querySelector('button.gemini-gradient-135');
+  const btn = $('srv-config-save');
   btn.disabled = true;
   btn.textContent = 'Saving…';
   try {
@@ -411,13 +398,11 @@ function openConfirm({ title, message, confirmLabel = 'Confirm', danger = false 
     $('confirm-message').textContent = message;
     const ok = $('confirm-ok');
     const icon = $('confirm-icon');
-    ok.textContent = confirmLabel;
+    setBtn(ok, danger ? 'danger' : 'primary', confirmLabel);
     if (danger) {
-      ok.className = 'px-3.5 py-1.5 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-500 text-white transition';
       icon.className = 'shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-red-500/10 text-red-400';
       icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
     } else {
-      ok.className = 'px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition';
       icon.className = 'shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-sky-500/10 text-sky-400';
       icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
     }

@@ -1,11 +1,14 @@
 {% from "partials/_macros.html" import icon_card, icon_card_end, dot %}
+{% from "partials/_button.html" import button %}
 {{ icon_card('<path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.8 0"/>', 'Service', col_span='lg:col-span-2') }}
 <div class="flex items-center gap-2.5 mb-4">
   {{ dot('bg-zinc-600', id='svc-dot') }}
   <span id="svc-state" class="text-sm text-zinc-300">…</span>
 </div>
 <div class="flex gap-2">
-  <button id="svc-toggle" onclick="svcToggle()" class="px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition">Start</button>
-  <button id="install-toggle" onclick="installToggle()" class="px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition ml-auto">Install</button>
+  {{ button('Start', id='svc-toggle', onclick='svcToggle()') }}
+  <div class="ml-auto">
+    {{ button('Install', id='install-toggle', onclick='installToggle()') }}
+  </div>
 </div>
 {{ icon_card_end() }}

@@ -1,4 +1,5 @@
 {% from "partials/_macros.html" import icon_card, icon_card_end, kv %}
+{% from "partials/_button.html" import button %}
 {{ icon_card('<rect x="2" y="3" width="20" height="7" rx="2"/><rect x="2" y="14" width="20" height="7" rx="2"/><path d="M6 6.5h.01M6 17.5h.01"/>', 'Llama server', status_html='<span class="ml-auto flex items-center gap-1.5 text-xs text-zinc-400"><span id="srv-dot" class="w-2 h-2 rounded-full bg-zinc-600"></span><span id="srv-state">…</span></span>', col_span='lg:col-span-2') }}
 <dl class="space-y-2.5 text-sm">
   {{ kv('url', 'srv-url') }}
@@ -10,5 +11,5 @@
   <div class="text-xs text-zinc-500 mb-1.5">loaded models</div>
   <div id="srv-models" class="flex flex-wrap gap-1.5"></div>
 </div>
-<button onclick="openServerConfig()" class="mt-4 w-full px-3.5 py-2 text-sm font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 transition">Configure</button>
+{{ button('Configure', variant='secondary', onclick='openServerConfig()', block=true, extra='mt-4') }}
 {{ icon_card_end() }}
