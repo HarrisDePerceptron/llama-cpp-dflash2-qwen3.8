@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-UNIT=llama-dflash
+UNIT="${LLAMA_UNIT:-llama-dflash}"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 UNIT_FILE="$HOME/.config/systemd/user/$UNIT.service"
 

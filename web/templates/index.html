@@ -87,6 +87,7 @@ tailwind.config = {
 </div>
 
 {% include "partials/log-modal.html" %}
+{% include "partials/confirm-modal.html" %}
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -248,8 +249,22 @@ async function refresh() {
     renderAgents(s.agents);
     renderStatusPill(s.service, s.server);
     const built = s.instance.built;
-    $('setup-dot').className = 'w-2 h-2 rounded-full ' + (built ? 'bg-emerald-500' : 'bg-zinc-600');
-    $('setup-state').textContent = built ? 'llama.cpp built' : 'llama.cpp not built';
+    const setupJob = await j('/api/jobs/setup');
+    setupRunning = setupJob.state === 'running';
+    $('setup-dot').className = 'w-2 h-2 rounded-full ' + (setupRunning ? 'bg-amber-500 animate-pulse' : built ? 'bg-emerald-500' : 'bg-zinc-600');
+    $('setup-state').textContent = setupRunning ? 'setup running…' : built ? 'already set up' : 'not set up';
+    const setupBtn = $('setup-btn');
+    if (setupRunning) {
+      setupBtn.textContent = 'Stop setup';
+      setupBtn.disabled = false;
+      setupBtn.className = 'px-3.5 py-1.5 text-sm font-medium rounded-lg text-red-400 ring-1 ring-inset ring-red-500/30 hover:bg-red-500/10 transition';
+    } else {
+      setupBtn.textContent = 'Run setup';
+      setupBtn.disabled = built;
+      setupBtn.className = 'px-3.5 py-1.5 text-sm font-semibold rounded-lg transition ' + (built
+        ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+        : 'gemini-gradient-135 text-zinc-950 hover:opacity-90');
+    }
     const logs = await j('/api/logs?lines=200');
     const el = $('logs');
     el.textContent = logs.lines.join('\n');
@@ -281,14 +296,29 @@ async function svcAction(action) {
 }
 
 async function uninstall() {
-  const msg = 'Uninstall the stack?\n\n- stops and removes the llama-dflash systemd service\n- deletes llama.cpp/ (the build)\n- removes the llama-server provider from opencode\n(the opencode binary is kept)';
-  if (!confirm(msg)) return;
-  const r = await post('/api/service/uninstall');
-  alert(r.steps.join('\n'));
-  refresh();
+  const ok = await openConfirm({
+    title: 'Uninstall the stack?',
+    message: `- stops and removes the {{ unit }} systemd service
+- kills any running llama-server process for this instance
+- deletes llama.cpp/ (the build)
+- removes the llama-server provider from opencode
+(the opencode binary is kept)`,
+    confirmLabel: 'Uninstall',
+    danger: true,
+  });
+  if (!ok) return;
+  await post('/api/service/uninstall');
+  openJobModal('uninstall');
 }
 
-async function runSetup() {
+let setupRunning = false;
+
+async function setupBtnClick() {
+  if (setupRunning) {
+    await post('/api/jobs/setup/stop');
+    return;
+  }
+  if ($('setup-btn').disabled) return;
   await post('/api/setup');
   openJobModal('setup');
 }
@@ -360,6 +390,51 @@ $('srv-config-modal').addEventListener('click', (e) => {
   if (e.target === $('srv-config-modal')) closeServerConfig();
 });
 
+// ── Reusable confirmation modal ──────────────────────────────────────
+let confirmResolve = null;
+
+function openConfirm({ title, message, confirmLabel = 'Confirm', danger = false }) {
+  return new Promise((resolve) => {
+    confirmResolve = resolve;
+    $('confirm-title').textContent = title;
+    $('confirm-message').textContent = message;
+    const ok = $('confirm-ok');
+    const icon = $('confirm-icon');
+    ok.textContent = confirmLabel;
+    if (danger) {
+      ok.className = 'px-3.5 py-1.5 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-500 text-white transition';
+      icon.className = 'shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-red-500/10 text-red-400';
+      icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+    } else {
+      ok.className = 'px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition';
+      icon.className = 'shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-sky-500/10 text-sky-400';
+      icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+    }
+    const modal = $('confirm-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    $('confirm-cancel').focus();
+  });
+}
+
+function closeConfirm(result) {
+  const modal = $('confirm-modal');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  const resolve = confirmResolve;
+  confirmResolve = null;
+  if (resolve) resolve(result);
+}
+
+$('confirm-cancel').addEventListener('click', () => closeConfirm(false));
+$('confirm-ok').addEventListener('click', () => closeConfirm(true));
+$('confirm-modal').addEventListener('click', (e) => {
+  if (e.target === $('confirm-modal')) closeConfirm(false);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && confirmResolve) closeConfirm(false);
+});
+
 // ── Reusable terminal log modal ──────────────────────────────────────
 let logModal = null;
 const stripAnsi = (s) => s.replace(/\x1b\[[0-9;]*m/g, '');
@@ -368,6 +443,7 @@ const logBadgeStyles = {
   running: 'bg-amber-500/10 text-amber-400 ring-amber-500/20',
   done: 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20',
   error: 'bg-red-500/10 text-red-400 ring-red-500/20',
+  stopped: 'bg-sky-500/10 text-sky-400 ring-sky-500/20',
 };
 
 function setLogModalBadge(state) {
@@ -377,8 +453,8 @@ function setLogModalBadge(state) {
   badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-mono ring-1 ring-inset ' + (logBadgeStyles[state] || 'bg-zinc-800/60 text-zinc-400 ring-zinc-700/60');
 }
 
-function openLogModal({ title, load }) {
-  logModal = { load, follow: true, last: '' };
+function openLogModal({ title, load, stopUrl = null }) {
+  logModal = { load, stopUrl, follow: true, last: '' };
   $('log-modal-title').textContent = title;
   $('log-modal-body').textContent = '';
   setLogModalBadge(null);
@@ -407,12 +483,23 @@ async function pollLogModal() {
     if (logModal.follow && (pinned || out !== logModal.last)) body.scrollTop = body.scrollHeight;
     logModal.last = out;
     setLogModalBadge(snap.state);
+    $('log-modal-stop').classList.toggle('hidden', !(logModal.stopUrl && snap.state === 'running'));
   } catch (e) { /* transient */ }
 }
 
 function openJobModal(which) {
-  const titles = { setup: 'Setup', opencode: 'Configure opencode' };
-  openLogModal({ title: titles[which], load: () => j('/api/jobs/' + which) });
+  const titles = { setup: 'Setup', opencode: 'Configure opencode', uninstall: 'Uninstall' };
+  const stopUrl = which === 'uninstall' ? null : '/api/jobs/' + which + '/stop';
+  openLogModal({ title: titles[which], load: () => j('/api/jobs/' + which), stopUrl });
+}
+
+async function stopLogModalJob() {
+  if (!logModal || !logModal.stopUrl) return;
+  const btn = $('log-modal-stop');
+  btn.disabled = true;
+  await post(logModal.stopUrl);
+  btn.disabled = false;
+  pollLogModal();
 }
 
 function copyLogModal() {
@@ -436,7 +523,7 @@ $('log-modal').addEventListener('click', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && logModal) closeLogModal();
+  if (e.key === 'Escape' && logModal && !confirmResolve) closeLogModal();
 });
 
 refresh();

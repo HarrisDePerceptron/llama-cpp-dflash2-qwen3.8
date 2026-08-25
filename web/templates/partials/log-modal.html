@@ -7,6 +7,7 @@
         <span id="log-modal-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-mono ring-1 ring-inset"></span>
       </div>
       <div class="flex items-center gap-1 shrink-0">
+        <button id="log-modal-stop" onclick="stopLogModalJob()" title="Stop job" class="hidden px-2.5 py-1 rounded-lg text-xs font-medium text-red-400 ring-1 ring-inset ring-red-500/30 hover:bg-red-500/10 transition">Stop</button>
         <button id="log-modal-copy" onclick="copyLogModal()" title="Copy logs" class="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>

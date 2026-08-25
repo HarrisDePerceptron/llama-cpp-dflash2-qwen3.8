@@ -5,7 +5,8 @@ user service, plus a `localllm` CLI + FastAPI web UI that manages the stack.
 
 ## Safety
 
-- The `llama-dflash` service on `:8001` may be serving the *current* inference session
+- The `llama-dflash` (dev) / `llama-dflash-production` (installed) service on `:8001`
+  may be serving the *current* inference session
   (model id `llama-server/ggml-org/Qwen3.8-27B-GGUF:Q4_K_M`). Never stop/remove/uninstall
   the stack while working in this repo.
 - Uninstall is destructive: `service.sh remove` + `rm -rf llama.cpp/` + strips the
@@ -14,7 +15,9 @@ user service, plus a `localllm` CLI + FastAPI web UI that manages the stack.
 ## Layout
 
 - `run.sh` — starts `llama-server` on `0.0.0.0:8001`; model + DFlash2 draft flags live here
-- `service.sh` — systemd **user** service manager: `install|start|stop|status|logs [--full]|remove`
+- `service.sh` — systemd **user** service manager: `install|start|stop|status|logs [--full]|remove`.
+  Unit name defaults to `llama-dflash`; override with the `LLAMA_UNIT` env var (the web
+  UI sets `llama-dflash-production` for installed instances)
 - `setup.sh` — idempotent: clones llama.cpp, checks out branch `pr-27342`, builds (CUDA/Metal)
 - `setup-opencode.sh` — installs opencode, merges the `llama-server` provider into `~/.config/opencode/opencode.json`
 - `llama.cpp/` — nested git repo (NOT a submodule), pinned to `pr-27342` (the DFlash2 PR).

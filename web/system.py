@@ -12,7 +12,11 @@ from pathlib import Path
 import psutil
 
 MODEL_PORT = 8001
-UNIT = "llama-dflash"
+UNIT_BASE = "llama-dflash"
+
+
+def unit_for(mode: str) -> str:
+    return f"{UNIT_BASE}-production" if mode == "installed" else UNIT_BASE
 _OC_VERSION_TTL = 300
 _oc_version_cache: tuple[float, str | None] | None = None
 _SPEED_WINDOW_S = 20.0
@@ -22,9 +26,17 @@ _speed_last_avg: dict[str, float | None] = {"prompt": None, "predict": None}
 _speed_last_cur: dict[str, float | None] = {"prompt": None, "predict": None}
 
 
-def _run(cmd: list[str], timeout: float = 10.0) -> tuple[int, str, str]:
+def _run(
+    cmd: list[str], timeout: float = 10.0, extra_env: dict[str, str] | None = None
+) -> tuple[int, str, str]:
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        r = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            env={**os.environ, **extra_env} if extra_env else None,
+        )
         return r.returncode, r.stdout.strip(), r.stderr.strip()
     except (OSError, subprocess.TimeoutExpired):
         return 1, "", "timeout"
@@ -121,17 +133,17 @@ def gpu_stats() -> list[dict]:
     return gpus
 
 
-def service_status() -> dict:
-    unit_file = Path.home() / ".config/systemd/user" / f"{UNIT}.service"
-    rc, out, _ = _run(["systemctl", "--user", "is-active", UNIT])
+def service_status(unit: str) -> dict:
+    unit_file = Path.home() / ".config/systemd/user" / f"{unit}.service"
+    rc, out, _ = _run(["systemctl", "--user", "is-active", unit])
     active = out if rc == 0 else "inactive"
-    rc2, out2, _ = _run(["systemctl", "--user", "is-enabled", UNIT])
+    rc2, out2, _ = _run(["systemctl", "--user", "is-enabled", unit])
     enabled = out2 if rc2 == 0 else "disabled"
     return {"installed": unit_file.exists(), "active": active, "enabled": enabled}
 
 
-def journal_tail(lines: int = 200) -> str:
-    rc, out, _ = _run(["journalctl", "--user", "-u", UNIT, "-n", str(lines), "--no-pager"])
+def journal_tail(unit: str, lines: int = 200) -> str:
+    rc, out, _ = _run(["journalctl", "--user", "-u", unit, "-n", str(lines), "--no-pager"])
     return out
 
 
@@ -470,12 +482,64 @@ def remove_opencode_provider() -> str:
     return "removed llama-server provider from opencode config"
 
 
-def uninstall_stack(instance) -> list[str]:
+def _find_llama_server_pids(target_bin: Path) -> list[int]:
+    target = os.path.realpath(str(target_bin))
+    pids: list[int] = []
+    for proc in psutil.process_iter(["pid", "exe"]):
+        try:
+            exe = proc.info.get("exe") or ""
+            if exe and os.path.realpath(exe) == target:
+                pids.append(proc.pid)
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+    return pids
+
+
+def _kill_pids(pids: list[int]) -> None:
+    procs: list[psutil.Process] = []
+    for pid in pids:
+        try:
+            procs.append(psutil.Process(pid))
+        except psutil.NoSuchProcess:
+            continue
+    for p in procs:
+        try:
+            p.terminate()
+        except psutil.NoSuchProcess:
+            pass
+    _, alive = psutil.wait_procs(procs, timeout=5)
+    for p in alive:
+        try:
+            p.kill()
+        except psutil.NoSuchProcess:
+            pass
+    psutil.wait_procs(alive, timeout=5)
+
+
+def kill_llama_server(instance) -> str:
+    pids = _find_llama_server_pids(instance.llama_server_bin)
+    if not pids:
+        return "no running llama-server process"
+    _kill_pids(pids)
+    return f"killed {len(pids)} llama-server process(es): {', '.join(map(str, pids))}"
+
+
+def uninstall_stack(instance, emit=None) -> list[str]:
     steps: list[str] = []
-    rc, _, err = _run(["bash", str(instance.service_sh), "remove"], timeout=120)
-    steps.append(f"service.sh remove: {'ok' if rc == 0 else (err or 'failed')}")
+
+    def record(msg: str) -> None:
+        steps.append(msg)
+        if emit is not None:
+            emit(msg)
+
+    unit = unit_for(instance.mode)
+    rc, _, err = _run(
+        ["bash", str(instance.service_sh), "remove"], timeout=120, extra_env={"LLAMA_UNIT": unit}
+    )
+    record(f"service.sh remove: {'ok' if rc == 0 else (err or 'failed')}")
+    record(kill_llama_server(instance))
     if instance.llama_cpp_dir.exists():
         shutil.rmtree(instance.llama_cpp_dir, ignore_errors=True)
-        steps.append("removed llama.cpp/")
-    steps.append(remove_opencode_provider())
+        record("removed llama.cpp/")
+    record(remove_opencode_provider())
     return steps

@@ -14,7 +14,7 @@
       {{ dot('bg-zinc-600', id='setup-dot') }}
       <span id="setup-state" class="text-sm text-zinc-300">…</span>
     </span>
-    <button onclick="runSetup()" class="px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition">Run setup</button>
+    <button id="setup-btn" onclick="setupBtnClick()" class="px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 transition">Run setup</button>
   </div>
 </div>
 {{ icon_card_end() }}
