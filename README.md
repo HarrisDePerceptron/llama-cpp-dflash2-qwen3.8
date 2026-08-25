@@ -50,7 +50,7 @@ curl -s localhost:8001/health   # {"status":"ok"}
 ## Scripts
 
 - **`setup.sh`** — Clones llama.cpp, checks out PR 27342, builds with auto-detected backend (CUDA/Metal). Idempotent.
-- **`service.sh`** — Manages the `llama-dflash` systemd user service: `install`, `start`, `stop`, `status`, `logs`, `remove`. Unit name is overridable via the `LLAMA_UNIT` env var (the web UI uses `llama-dflash-production` for installed instances, so dev and production stacks get distinct units).
+- **`service.sh`** — Manages the `llama-dflash` systemd user service: `install`, `start`, `stop`, `status`, `logs`, `remove`. The unit name is chosen automatically by instance type: a source checkout gets `llama-dflash` (dev), an installed/global copy under `~/.local/share/localllm` gets `llama-dflash-production`. Explicitly set the `LLAMA_UNIT` env var to override (the web UI does this). On `install`, warns if another `llama-dflash*` unit is active, since both bind `:8001`.
 - **`run.sh`** — Starts the server with the target model + DFlash2 draft model on `0.0.0.0:8001`.
 - **`setup-opencode.sh`** — Installs opencode and merges the `llama-server` provider into `~/.config/opencode/opencode.json`.
 

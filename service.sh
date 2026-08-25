@@ -1,9 +1,31 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-UNIT="${LLAMA_UNIT:-llama-dflash}"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [ -n "${LLAMA_UNIT:-}" ]; then
+    UNIT="$LLAMA_UNIT"
+elif [ -d "$DIR/localllm" ] && [ -d "$DIR/web" ]; then
+    # source checkout → dev unit
+    UNIT="llama-dflash"
+else
+    # installed/global copy (~/.local/share/localllm) → production unit
+    UNIT="llama-dflash-production"
+fi
+
 UNIT_FILE="$HOME/.config/systemd/user/$UNIT.service"
+
+warn_conflict() {
+    local other
+    for other in "$HOME/.config/systemd/user/"llama-dflash*.service; do
+        [ -e "$other" ] || continue
+        [ "$(basename "$other")" = "$UNIT.service" ] && continue
+        if systemctl --user is-active --quiet "$(basename "$other" .service)" 2>/dev/null; then
+            echo "warning: $(basename "$other") is active and also binds :8001;" \
+                 "stop it before starting $UNIT" >&2
+        fi
+    done
+}
 
 write_unit() {
     mkdir -p "$(dirname "$UNIT_FILE")"
@@ -30,6 +52,7 @@ case "${1:-}" in
     install)
         write_unit
         systemctl --user daemon-reload
+        warn_conflict
         if [ "${LLAMA_INSTALL_START:-1}" = "1" ]; then
             systemctl --user enable --now "$UNIT"
         else
