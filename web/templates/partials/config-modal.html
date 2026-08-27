@@ -1,0 +1,28 @@
+{% from "partials/_button.html" import button %}
+<div id="srv-config-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+  <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg shadow-2xl">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+      <h3 class="text-sm font-semibold text-zinc-100">Server configuration</h3>
+      {{ button('', variant='icon', onclick='closeServerConfig()', title='Close', icon='<path d="M18 6 6 18M6 6l12 12"/>') }}
+    </div>
+    <div id="srv-config-body" class="px-5 py-4 max-h-[60vh] overflow-y-auto space-y-3">
+      {% for p in params %}
+      {% if p.is_flag %}
+      <div class="flex items-center gap-2">
+        <label class="w-28 shrink-0 text-xs font-mono text-zinc-400 truncate" title="{{ p.name }}">{{ p.name }}</label>
+        <input type="checkbox" data-idx="{{ loop.index0 }}" data-name="{{ p.name }}" data-flag="1" checked class="rounded bg-zinc-800 border-zinc-700 text-emerald-500 focus:ring-emerald-500/30">
+      </div>
+      {% else %}
+      <div class="flex items-center gap-2">
+        <label class="w-28 shrink-0 text-xs font-mono text-zinc-400 truncate" title="{{ p.name }}">{{ p.name }}</label>
+        <input type="text" data-idx="{{ loop.index0 }}" data-name="{{ p.name }}" value="{{ p.value }}" class="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-zinc-200 focus:outline-none focus:ring-1 focus:ring-emerald-500/50">
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    <div class="flex items-center justify-end gap-2 px-5 py-3 border-t border-zinc-800">
+      {{ button('Cancel', variant='secondary', onclick='closeServerConfig()') }}
+      {{ button('Save & Restart', id='srv-config-save', onclick='saveServerConfig()') }}
+    </div>
+  </div>
+</div>

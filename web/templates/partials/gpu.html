@@ -1,4 +1,37 @@
 {% from "partials/_macros.html" import icon_card, icon_card_end %}
 {{ icon_card('<rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>', 'GPU', col_span='lg:col-span-4') }}
-<div id="gpus" class="space-y-4"></div>
+{% if state.gpus %}
+<div class="space-y-4">
+  {% for g in state.gpus %}
+  <div data-gpu-card class="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-sm font-medium text-zinc-100">{{ g.name }} <span class="text-zinc-600 font-normal">· GPU {{ g.index }}</span></span>
+      <span class="text-xs text-zinc-500 font-mono" id="gpu-{{ g.index }}-meta"></span>
+    </div>
+    <div class="space-y-2.5">
+      <div class="flex items-center gap-3">
+        <span class="text-[11px] uppercase tracking-wide text-zinc-500 w-12">util</span>
+        <div class="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div id="gpu-{{ g.index }}-util-bar" class="h-full gemini-gradient rounded-full transition-[width] duration-500" style="width:0%"></div></div>
+        <span class="text-xs font-mono text-zinc-300 w-10 text-right" id="gpu-{{ g.index }}-util-val">—</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-[11px] uppercase tracking-wide text-zinc-500 w-12">vram</span>
+        <div class="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden flex">
+          <div id="gpu-{{ g.index }}-vram-model" class="h-full bg-sky-500/80 transition-[width] duration-500" style="width:0%"></div>
+          <div id="gpu-{{ g.index }}-vram-other" class="h-full bg-amber-500/60 transition-[width] duration-500" style="width:0%"></div>
+        </div>
+        <span class="text-xs font-mono text-zinc-300 w-24 text-right" id="gpu-{{ g.index }}-vram-val">—</span>
+      </div>
+    </div>
+    <div class="flex items-center justify-between mt-3 text-[11px]">
+      <span class="flex items-center gap-1.5 text-zinc-500"><span class="w-2 h-2 rounded-sm bg-sky-500/80"></span>model <span class="text-zinc-300 font-mono" id="gpu-{{ g.index }}-model-gb">—</span></span>
+      <span class="flex items-center gap-1.5 text-zinc-500"><span class="w-2 h-2 rounded-sm bg-amber-500/60"></span>other <span class="text-zinc-300 font-mono" id="gpu-{{ g.index }}-other-gb">—</span></span>
+      <span class="text-zinc-500">free <span class="text-zinc-300 font-mono" id="gpu-{{ g.index }}-free-gb">—</span></span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-sm text-zinc-500">no NVIDIA GPU detected</p>
+{% endif %}
 {{ icon_card_end() }}

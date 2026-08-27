@@ -10,6 +10,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
@@ -18,6 +19,7 @@ from web import system
 
 app = FastAPI(title="localllm")
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+app.mount("/static", StaticFiles(directory=str(Path(__file__).parent / "static")), name="static")
 
 
 class Job:
@@ -117,15 +119,7 @@ opencode_job = Job()
 uninstall_job = Job()
 
 
-@app.get("/", response_class=HTMLResponse)
-def index(request: Request):
-    inst = resolve_instance()
-    return templates.TemplateResponse(request, "index.html", {"unit": system.unit_for(inst.mode)})
-
-
-@app.get("/api/state")
-def api_state():
-    inst = resolve_instance()
+def gather_state(inst) -> dict:
     server = system.server_config(inst)
     return {
         "instance": {"path": str(inst.path), "mode": inst.mode, "built": inst.built},
@@ -137,6 +131,25 @@ def api_state():
         "speed": system.server_speed(server["url"]),
         "weights": system.model_weights(inst),
     }
+
+
+@app.get("/", response_class=HTMLResponse)
+def index(request: Request):
+    inst = resolve_instance()
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        {
+            "unit": system.unit_for(inst.mode),
+            "state": gather_state(inst),
+            "params": system.parse_run_sh_params(inst.run_sh),
+        },
+    )
+
+
+@app.get("/api/state")
+def api_state():
+    return gather_state(resolve_instance())
 
 
 @app.get("/api/logs")

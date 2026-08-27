@@ -1,4 +1,30 @@
 {% from "partials/_macros.html" import icon_card, icon_card_end %}
-{{ icon_card('<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/>', 'Weights', status_html='<span id="wt-total" class="ml-auto text-xs font-mono text-zinc-500"></span>', col_span='lg:col-span-2') }}
-<div id="wt-models" class="space-y-3"></div>
+{{ icon_card('<path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6L5.6 18.4"/>', 'Weights', col_span='lg:col-span-2') }}
+<div class="text-xs text-zinc-500 mb-3">
+  <div class="font-mono truncate" title="{{ state.weights.cache_dir }}">{{ state.weights.cache_dir }}</div>
+  <div class="mt-1">total on disk: <span class="text-zinc-300 font-mono" id="wt-total"></span></div>
+</div>
+<div class="space-y-3">
+  {% for m in state.weights.models %}
+  <div data-wt-card class="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
+    <div class="flex items-center justify-between mb-1.5">
+      <span class="text-sm font-medium text-zinc-100">{{ m.role }}</span>
+      <span class="text-xs font-mono text-zinc-400" id="wt-{{ loop.index0 }}-summary"></span>
+    </div>
+    <div class="text-[11px] text-zinc-500 font-mono truncate" title="{{ m.repo }}{% if m.revision %}@{{ m.revision }}{% endif %}">{{ m.repo }}{% if m.revision %}@{{ m.revision }}{% endif %}</div>
+    {% if m.found %}
+    <div id="wt-{{ loop.index0 }}-files" class="mt-2 space-y-1">
+      {% for f in m.files %}
+      <div class="flex items-center justify-between text-[11px]">
+        <span class="text-zinc-400 font-mono truncate pr-2">{{ f.name }}</span>
+        <span class="text-zinc-500 font-mono shrink-0 wt-file-size"></span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="mt-2 text-[11px] text-amber-500/80">not found — run Install</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
 {{ icon_card_end() }}

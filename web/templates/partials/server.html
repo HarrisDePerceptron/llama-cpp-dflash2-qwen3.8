@@ -1,15 +1,38 @@
-{% from "partials/_macros.html" import icon_card, icon_card_end, kv %}
+{% from "partials/_macros.html" import icon_card, icon_card_end %}
 {% from "partials/_button.html" import button %}
-{{ icon_card('<rect x="2" y="3" width="20" height="7" rx="2"/><rect x="2" y="14" width="20" height="7" rx="2"/><path d="M6 6.5h.01M6 17.5h.01"/>', 'Llama server', status_html='<span class="ml-auto flex items-center gap-1.5 text-xs text-zinc-400"><span id="srv-dot" class="w-2 h-2 rounded-full bg-zinc-600"></span><span id="srv-state">…</span></span>', col_span='lg:col-span-2') }}
-<dl class="space-y-2.5 text-sm">
-  {{ kv('url', 'srv-url') }}
-  {{ kv('model', 'srv-model') }}
-  {{ kv('draft', 'srv-draft') }}
-  {{ kv('ctx / ngl', 'srv-ctx') }}
-</dl>
-<div class="mt-4">
-  <div class="text-xs text-zinc-500 mb-1.5">loaded models</div>
-  <div id="srv-models" class="flex flex-wrap gap-1.5"></div>
+{{ icon_card('<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M1 12h4M19 12h4M4.2 19.8l2.8-2.8M17 7l2.8-2.8"/>', 'Server', col_span='lg:col-span-2') }}
+<div class="flex items-center gap-2 mb-4">
+  <span id="srv-dot" class="w-2 h-2 rounded-full {{ 'bg-emerald-500' if state.server.up else 'bg-zinc-600' }}"></span>
+  <span id="srv-state" class="text-sm text-zinc-300">{{ 'up' if state.server.up else 'down' }}</span>
 </div>
-{{ button('Configure', variant='secondary', onclick='openServerConfig()', block=true, extra='mt-4') }}
+<div class="space-y-2.5">
+  <div class="flex items-center justify-between text-sm">
+    <span class="text-zinc-500">endpoint</span>
+    <span class="font-mono text-xs text-zinc-300" id="srv-url">{{ state.server.url }}</span>
+  </div>
+  <div class="flex items-center justify-between text-sm">
+    <span class="text-zinc-500">model</span>
+    <span class="font-mono text-xs text-zinc-300" id="srv-model">{{ state.server.configured.model or '—' }}</span>
+  </div>
+  <div class="flex items-center justify-between text-sm">
+    <span class="text-zinc-500">draft</span>
+    <span class="font-mono text-xs text-zinc-300" id="srv-draft">{{ state.server.configured.draft or '—' }}</span>
+  </div>
+  <div class="flex items-center justify-between text-sm">
+    <span class="text-zinc-500">ctx / ngl</span>
+    <span class="font-mono text-xs text-zinc-300" id="srv-ctx">{{ state.server.configured.ctx_size }} / {{ state.server.configured.ngl }}</span>
+  </div>
+</div>
+<div id="srv-models" class="mt-4 {{ '' if state.server.up else 'hidden' }}">
+  <div class="text-[11px] uppercase tracking-wide text-zinc-500 mb-2">served models</div>
+  <div class="flex flex-wrap gap-1.5">
+    {% for mid in (state.server.model_ids or [state.server.configured.model]) %}
+    <span class="px-2 py-1 rounded-md bg-zinc-800/60 border border-zinc-700/50 text-[11px] font-mono text-zinc-300">{{ mid }}</span>
+    {% endfor %}
+  </div>
+</div>
+<span id="srv-down" class="mt-4 text-xs text-zinc-600 {{ '' if state.server.up else 'hidden' }}">server is down — no models served</span>
+<div class="mt-4">
+  {{ button('View details', variant='secondary', onclick='openServerConfig()', block=true) }}
+</div>
 {{ icon_card_end() }}
