@@ -18,3 +18,46 @@
     </div>
   </div>
 </div>
+<script type="module">
+  import { $, setBtn } from '/static/js/core.js';
+
+  let confirmResolve = null;
+
+  function openConfirm({ title, message, confirmLabel = 'Confirm', danger = false }) {
+    return new Promise((resolve) => {
+      confirmResolve = resolve;
+      $('confirm-title').textContent = title;
+      $('confirm-message').textContent = message;
+      setBtn($('confirm-ok'), danger ? 'danger' : 'primary', confirmLabel);
+      const icon = $('confirm-icon');
+      icon.className = 'shrink-0 w-9 h-9 rounded-full flex items-center justify-center ' + (danger ? 'bg-red-500/10 text-red-400' : 'bg-sky-500/10 text-sky-400');
+      $('confirm-icon-danger').classList.toggle('hidden', !danger);
+      $('confirm-icon-info').classList.toggle('hidden', danger);
+      const modal = $('confirm-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      $('confirm-cancel').focus();
+    });
+  }
+
+  function closeConfirm(result) {
+    const modal = $('confirm-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    const resolve = confirmResolve;
+    confirmResolve = null;
+    if (resolve) resolve(result);
+  }
+
+  $('confirm-cancel').addEventListener('click', () => closeConfirm(false));
+  $('confirm-ok').addEventListener('click', () => closeConfirm(true));
+  $('confirm-modal').addEventListener('click', (e) => {
+    if (e.target === $('confirm-modal')) closeConfirm(false);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (confirmResolve) closeConfirm(false);
+  });
+
+  window.openConfirm = openConfirm;
+</script>

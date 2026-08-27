@@ -26,3 +26,52 @@
     </div>
   </div>
 </div>
+<script type="module">
+  import { $, API, refresh } from '/static/js/core.js';
+
+  function openServerConfig() {
+    const modal = $('srv-config-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeServerConfig() {
+    const modal = $('srv-config-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  async function saveServerConfig() {
+    const inputs = $('srv-config-body').querySelectorAll('[data-idx]');
+    const params = [];
+    inputs.forEach((el) => {
+      if (el.dataset.flag) {
+        if (el.checked) params.push({ name: el.dataset.name, value: '', is_flag: true });
+      } else {
+        params.push({ name: el.dataset.name, value: el.value, is_flag: false });
+      }
+    });
+    const btn = $('srv-config-save');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    try {
+      await API.saveServerParams(params);
+      await API.restartServer();
+      closeServerConfig();
+      refresh();
+    } catch (e) {
+      alert(e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save & Restart';
+    }
+  }
+
+  $('srv-config-modal').addEventListener('click', (e) => {
+    if (e.target === $('srv-config-modal')) closeServerConfig();
+  });
+
+  window.openServerConfig = openServerConfig;
+  window.closeServerConfig = closeServerConfig;
+  window.saveServerConfig = saveServerConfig;
+</script>

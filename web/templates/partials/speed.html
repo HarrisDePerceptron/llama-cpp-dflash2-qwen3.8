@@ -27,3 +27,20 @@
   </div>
 </div>
 {{ icon_card_end() }}
+<script type="module">
+  import { $, register } from '/static/js/core.js';
+
+  function renderSpeed(ctx) {
+    const s = ctx.speed;
+    const fmt = (v) => v != null ? v.toFixed(1) : '—';
+    $('spd-prompt').textContent = fmt(s.prompt_tps);
+    $('spd-predict').textContent = fmt(s.predict_tps);
+    $('spd-prompt-avg').textContent = s.prompt_tps_avg != null ? s.prompt_tps_avg.toFixed(1) + ' t/s' : '—';
+    $('spd-predict-avg').textContent = s.predict_tps_avg != null ? s.predict_tps_avg.toFixed(1) + ' t/s' : '—';
+    const badge = $('spd-live-badge');
+    if (s.live) { badge.textContent = 'live'; badge.className = 'ml-auto text-[10px] font-mono text-emerald-500'; }
+    else { badge.textContent = ''; badge.className = 'ml-auto text-[10px] font-mono text-zinc-600'; }
+  }
+
+  register(renderSpeed);
+</script>

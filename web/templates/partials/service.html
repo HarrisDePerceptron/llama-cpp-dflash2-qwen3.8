@@ -12,3 +12,80 @@
   </div>
 </div>
 {{ icon_card_end() }}
+<script type="module">
+  import { $, setBtn, register, API, lastCtx } from '/static/js/core.js';
+  const LLM = window.__LLM__;
+
+  let svcDetail = '';
+  let svcState = 'idle';
+
+  function renderService(ctx) {
+    const s = ctx.service;
+    const on = s.active === 'active';
+    $('svc-dot').className = 'w-2 h-2 rounded-full shrink-0 ' + (on ? 'bg-emerald-500' : 'bg-zinc-600');
+    $('svc-state').textContent = s.installed ? `${s.active} (${s.enabled})` : 'unit not installed';
+    setBtn($('svc-toggle'), on ? 'secondary' : 'primary', on ? 'Stop' : 'Start', svcState === 'running');
+  }
+
+  function renderInstallToggle(ctx) {
+    if (ctx.jobs.setup.state === 'running') setBtn($('install-toggle'), 'danger-ghost', 'Stop install');
+    else if (ctx.jobs.uninstall.state === 'running') setBtn($('install-toggle'), 'danger-ghost', 'Uninstalling…', true);
+    else if (ctx.ready) setBtn($('install-toggle'), 'danger-ghost', 'Uninstall');
+    else setBtn($('install-toggle'), 'primary', 'Install');
+  }
+
+  function svcToggle() {
+    if (svcState === 'running') return;
+    svcAction($('svc-toggle').textContent === 'Start' ? 'start' : 'stop');
+  }
+
+  async function svcAction(action) {
+    svcState = 'running';
+    svcDetail = '';
+    window.openLogModal({
+      title: `Service ${action}`,
+      load: async () => ({ state: svcState, output: (svcDetail || '').split('\n') }),
+    });
+    try {
+      const r = await API.service(action);
+      svcDetail = r.detail || (r.ok ? 'ok' : 'failed');
+      svcState = r.ok ? 'done' : 'error';
+    } catch (e) {
+      svcDetail = String(e.message || e);
+      svcState = 'error';
+    }
+  }
+
+  async function installToggle() {
+    const ctx = lastCtx;
+    if (!ctx) return;
+    if (ctx.jobs.setup.state === 'running') {
+      await API.jobStop('setup');
+      return;
+    }
+    if (ctx.jobs.uninstall.state === 'running') return;
+    if (ctx.ready) {
+      const ok = await window.openConfirm({
+        title: 'Uninstall the stack?',
+        message: `- stops and removes the ${LLM.unit} systemd service
+- kills any running llama-server process for this instance
+- deletes llama.cpp/ (the build)
+- removes the llama-server provider from opencode
+(the opencode binary is kept)`,
+        confirmLabel: 'Uninstall',
+        danger: true,
+      });
+      if (!ok) return;
+      await API.uninstall();
+      window.openJobModal('uninstall');
+      return;
+    }
+    await API.setup();
+    window.openJobModal('setup');
+  }
+
+  register(renderService);
+  register(renderInstallToggle);
+  window.svcToggle = svcToggle;
+  window.installToggle = installToggle;
+</script>

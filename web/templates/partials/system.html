@@ -22,3 +22,18 @@
   </div>
 </div>
 {{ icon_card_end() }}
+<script type="module">
+  import { $, register } from '/static/js/core.js';
+
+  function renderSystem(ctx) {
+    const s = ctx.system;
+    $('sys-cpu').textContent = `${s.cpu_percent}%`;
+    $('sys-cpu-bar').style.width = s.cpu_percent + '%';
+    $('sys-load').textContent = s.load_avg ? `load ${s.load_avg.map((x) => x.toFixed(2)).join('  ')}` : '';
+    $('sys-mem').textContent = `${s.mem_used_gb} / ${s.mem_total_gb} GB`;
+    $('sys-mem-bar').style.width = s.mem_percent + '%';
+    $('sys-swap').textContent = `${s.swap_used_gb} / ${s.swap_total_gb} GB`;
+  }
+
+  register(renderSystem);
+</script>

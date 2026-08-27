@@ -35,3 +35,29 @@
 <p class="text-sm text-zinc-500">no NVIDIA GPU detected</p>
 {% endif %}
 {{ icon_card_end() }}
+<script type="module">
+  import { $, fmtGB, pct, register } from '/static/js/core.js';
+
+  function renderGpus(ctx) {
+    const gpus = ctx.gpus;
+    const cards = document.querySelectorAll('[data-gpu-card]');
+    if ((gpus || []).length !== cards.length) { location.reload(); return; }
+    (gpus || []).forEach((g) => {
+      const i = g.index;
+      const model = g.model_mem_mb || 0;
+      const other = Math.max(0, (g.mem_used_mb || 0) - model);
+      const util = g.util_percent != null ? g.util_percent : 0;
+      $('gpu-' + i + '-meta').textContent = [g.temp_c != null ? g.temp_c + '°C' : '', g.power_w != null ? g.power_w.toFixed(0) + ' W' : ''].filter(Boolean).join(' · ');
+      $('gpu-' + i + '-util-bar').style.width = util + '%';
+      $('gpu-' + i + '-util-val').textContent = g.util_percent != null ? g.util_percent + '%' : '—';
+      $('gpu-' + i + '-vram-model').style.width = pct(model, g.mem_total_mb) + '%';
+      $('gpu-' + i + '-vram-other').style.width = pct(other, g.mem_total_mb) + '%';
+      $('gpu-' + i + '-vram-val').textContent = (g.mem_used_mb / 1024).toFixed(1) + ' / ' + (g.mem_total_mb / 1024).toFixed(1) + ' GB';
+      $('gpu-' + i + '-model-gb').textContent = fmtGB(model);
+      $('gpu-' + i + '-other-gb').textContent = fmtGB(other);
+      $('gpu-' + i + '-free-gb').textContent = fmtGB(Math.max(0, g.mem_total_mb - (g.mem_used_mb || 0)));
+    });
+  }
+
+  register(renderGpus);
+</script>

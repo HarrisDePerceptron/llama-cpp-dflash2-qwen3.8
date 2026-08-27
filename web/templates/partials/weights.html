@@ -28,3 +28,24 @@
   {% endfor %}
 </div>
 {{ icon_card_end() }}
+<script type="module">
+  import { $, fmtBytes, register } from '/static/js/core.js';
+
+  function renderWeights(ctx) {
+    const w = ctx.weights;
+    const models = (w && w.models) || [];
+    const cards = document.querySelectorAll('[data-wt-card]');
+    const renderedFiles = document.querySelectorAll('.wt-file-size').length;
+    const stateFiles = models.reduce((a, m) => a + ((m.files || []).length), 0);
+    if (models.length !== cards.length || renderedFiles !== stateFiles) { location.reload(); return; }
+    const total = models.reduce((a, m) => a + (m.total_bytes || 0), 0);
+    $('wt-total').textContent = total ? fmtBytes(total) : '';
+    models.forEach((m, i) => {
+      $('wt-' + i + '-summary').textContent = m.found ? m.files.length + ' files · ' + fmtBytes(m.total_bytes) : 'not found';
+      let j = 0;
+      document.querySelectorAll('#wt-' + i + '-files .wt-file-size').forEach((el) => { el.textContent = fmtBytes(m.files[j++].size_bytes); });
+    });
+  }
+
+  register(renderWeights);
+</script>

@@ -36,3 +36,21 @@
   {{ button('View details', variant='secondary', onclick='openServerConfig()', block=true) }}
 </div>
 {{ icon_card_end() }}
+<script type="module">
+  import { $, register } from '/static/js/core.js';
+
+  function renderServer(ctx) {
+    const s = ctx.server;
+    $('srv-dot').className = 'w-2 h-2 rounded-full ' + (s.up ? 'bg-emerald-500' : 'bg-zinc-600');
+    $('srv-state').textContent = s.up ? 'up' : 'down';
+    const c = s.configured || {};
+    $('srv-url').textContent = s.url;
+    $('srv-model').textContent = c.model || '—';
+    $('srv-draft').textContent = c.draft || '—';
+    $('srv-ctx').textContent = c.ctx_size ? `${c.ctx_size} / ${c.ngl ?? '—'}` : '—';
+    $('srv-models').classList.toggle('hidden', !s.up);
+    $('srv-down').classList.toggle('hidden', s.up);
+  }
+
+  register(renderServer);
+</script>

@@ -79,6 +79,28 @@ tailwind.config = {
 <script>
   window.__LLM__ = { btnBase: {{ BTN_BASE | tojson }}, btnClasses: {{ BTN_CLASSES | tojson }}, unit: {{ unit | tojson }} };
 </script>
+<script type="module">
+  import { $, register } from '/static/js/core.js';
+
+  function renderStatusPill(ctx) {
+    const svc = ctx.service;
+    const srv = ctx.server;
+    const el = $('status-pill');
+    let cls, text;
+    if (svc.active === 'active' && srv.up) { cls = 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20'; text = 'all systems go'; }
+    else if (svc.active === 'active' || srv.up) { cls = 'bg-amber-500/10 text-amber-400 ring-amber-500/20'; text = 'degraded'; }
+    else { cls = 'bg-red-500/10 text-red-400 ring-red-500/20'; text = 'down'; }
+    el.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ring-1 ring-inset ' + cls;
+    $('status-pill-text').textContent = text;
+  }
+
+  function renderInstance(ctx) {
+    $('instance').textContent = `${ctx.instance.path} [${ctx.instance.mode}]`;
+  }
+
+  register(renderStatusPill);
+  register(renderInstance);
+</script>
 <script type="module" src="/static/js/app.js"></script>
 </body>
 </html>
