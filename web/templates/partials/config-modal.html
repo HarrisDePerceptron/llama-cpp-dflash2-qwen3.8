@@ -60,7 +60,7 @@ async function saveServerConfig(actionContext = configContext) {
     context.close();
     refresh();
   } catch (error) {
-    alert(error.message);
+    window.toast.error(error.message);
   } finally {
     if (btn.isConnected) {
       btn.disabled = false;

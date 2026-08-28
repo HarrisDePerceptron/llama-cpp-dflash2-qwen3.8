@@ -1,4 +1,3 @@
-{% from "components/button.html" import button, BTN_BASE, BTN_CLASSES %}
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -61,12 +60,13 @@ tailwind.config = {
 </main>
 
 {% include "components/modal.html" %}
+{% include "components/toast.html" %}
 {% include "partials/config-modal.html" %}
 {% include "partials/log-modal.html" %}
 {% include "partials/confirm-modal.html" %}
 
 <script>
-  window.__LLM__ = { btnBase: {{ BTN_BASE | tojson }}, btnClasses: {{ BTN_CLASSES | tojson }}, unit: {{ unit | tojson }} };
+  window.__LLM__ = { unit: {{ unit | tojson }} };
 </script>
 <script type="module">
   import { $, register } from '/static/js/core.js';

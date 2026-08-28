@@ -2,11 +2,15 @@ import { API } from './api.js';
 
 export { API };
 
-const LLM = window.__LLM__;
-
 export const $ = (id) => document.getElementById(id);
-export const BTN_BASE = LLM.btnBase;
-export const BTN = LLM.btnClasses;
+export const BTN_BASE = 'inline-flex items-center justify-center gap-1.5 whitespace-nowrap transition cursor-pointer';
+export const BTN = {
+  'primary': 'px-3.5 py-1.5 text-sm font-semibold rounded-lg gemini-gradient-135 text-zinc-950 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed',
+  'secondary': 'px-3.5 py-1.5 text-sm font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed',
+  'danger': 'px-3.5 py-1.5 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-500 text-white disabled:opacity-50 disabled:cursor-not-allowed',
+  'danger-ghost': 'px-3.5 py-1.5 text-sm font-medium rounded-lg text-red-400 ring-1 ring-inset ring-red-500/30 hover:bg-red-500/10 disabled:opacity-50 disabled:cursor-not-allowed',
+  'icon': 'p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed',
+};
 
 export const fmtGB = (mb) => mb == null ? '—' : (mb / 1024).toFixed(1) + ' GB';
 export const fmtBytes = (b) => b >= 2 ** 30 ? (b / 2 ** 30).toFixed(1) + ' GB' : b >= 2 ** 20 ? (b / 2 ** 20).toFixed(0) + ' MB' : (b / 2 ** 10).toFixed(0) + ' KB';

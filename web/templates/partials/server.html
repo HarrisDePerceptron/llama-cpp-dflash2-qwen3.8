@@ -1,5 +1,5 @@
 {% from "components/card.html" import card %}
-{% from "components/button.html" import button %}
+{% from "components/button.html" import button_secondary %}
 {% call card('<circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M1 12h4M19 12h4M4.2 19.8l2.8-2.8M17 7l2.8-2.8"/>', 'Server', col_span='lg:col-span-2') %}
 <div class="flex items-center gap-2 mb-4">
   <span id="srv-dot" class="w-2 h-2 rounded-full {{ 'bg-emerald-500' if state.server.up else 'bg-zinc-600' }}"></span>
@@ -33,7 +33,7 @@
 </div>
 <span id="srv-down" class="mt-4 text-xs text-zinc-600 {{ '' if state.server.up else 'hidden' }}">server is down — no models served</span>
 <div class="mt-4">
-  {{ button('View details', variant='secondary', onclick='openServerConfig()', block=true) }}
+  {{ button_secondary('View details', onclick='openServerConfig()', block=true) }}
 </div>
 {% endcall %}
 <script type="module">

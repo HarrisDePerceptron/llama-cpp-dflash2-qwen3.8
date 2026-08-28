@@ -1,15 +1,15 @@
 {% from "components/card.html" import card %}
 {% from "components/dot.html" import dot %}
-{% from "components/button.html" import button %}
+{% from "components/button.html" import button_primary %}
 {% call card('<path d="M12 2v10M18.4 6.6a9 9 0 1 1-12.8 0"/>', 'Service', col_span='lg:col-span-2') %}
 <div class="flex items-center gap-2.5 mb-4">
   {{ dot('bg-zinc-600', id='svc-dot') }}
   <span id="svc-state" class="text-sm text-zinc-300">…</span>
 </div>
 <div class="flex gap-2">
-  {{ button('Start', id='svc-toggle', onclick='svcToggle()') }}
+  {{ button_primary('Start', id='svc-toggle', onclick='svcToggle()') }}
   <div class="ml-auto">
-    {{ button('Install', id='install-toggle', onclick='installToggle()') }}
+    {{ button_primary('Install', id='install-toggle', onclick='installToggle()') }}
   </div>
 </div>
 {% endcall %}

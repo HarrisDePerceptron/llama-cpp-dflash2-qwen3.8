@@ -41,13 +41,20 @@ Repo-local skills in `.agents/skills/` (managed by `skills-lock.json`; refresh w
 - Put one atomic, reusable primitive per file in `web/templates/components/` (for example,
   button, card, or modal). Compose wrappers with Jinja macros and call blocks; keep API and
   feature state out of components.
+- Keep components explicit: prefer one macro per variant (e.g. `button_primary`,
+  `button_secondary`, `button_icon`) over a single macro with a `variant` param plus a class
+  map. Allow some duplication at the component level — especially Tailwind classes — instead
+  of centralizing them.
+- Keep styling (Tailwind classes) inside components and the client JS (`web/static/js/`).
+  Never bridge styling classes from server to client via `window`; `window.__LLM__` carries
+  only runtime data (e.g. the systemd `unit`), never classes.
 - Put each complete feature in `web/templates/partials/`. A partial composes components and
   keeps its HTML and feature-specific `<script type="module">` together in the same file.
 - `components/modal.html` owns the single shared dialog host, appearance, and inline behavior;
   include it once from `index.html`. Feature modal partials provide only their `<template>` body
   and controller, opening the host through `window.Modal.open(...)`.
-- Reuse components instead of duplicating markup or Tailwind classes. Do not create companion
-  JavaScript files for partials; expose only necessary entry points on `window`.
+- Do not create companion JavaScript files for partials; expose only necessary entry points on
+  `window`.
 - After frontend changes, compile Jinja templates, syntax-check modules, run `git diff --check`,
   and smoke-test `curl -s localhost:8002/api/state`.
 

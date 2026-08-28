@@ -34,34 +34,6 @@ localllm web serve     # run the web UI in the foreground
 └── web/                 # FastAPI web UI (port 8002)
 ```
 
-## Quick start (scripts)
-
-```bash
-./setup.sh              # clone + build
-./service.sh install    # install + start systemd user service
-./setup-opencode.sh     # register provider in opencode
-```
-
-Verify:
-
-```bash
-./service.sh status
-curl -s localhost:8001/health   # {"status":"ok"}
-```
-
-## Scripts
-
-- **`setup.sh`** — Clones llama.cpp, checks out PR 27342, builds with auto-detected backend (CUDA/Metal). Idempotent.
-- **`service.sh`** — Manages the `llama-dflash` systemd user service: `install`, `start`, `stop`, `status`, `logs`, `remove`. The unit name is chosen automatically by instance type: a source checkout gets `llama-dflash` (dev), an installed/global copy under `~/.local/share/localllm` gets `llama-dflash-production`. Explicitly set the `LLAMA_UNIT` env var to override (the web UI does this). On `install`, warns if another `llama-dflash*` unit is active, since both bind `:8001`.
-- **`run.sh`** — Starts the server with the target model + DFlash2 draft model on `0.0.0.0:8001`.
-- **`setup-opencode.sh`** — Installs opencode and merges the `llama-server` provider into `~/.config/opencode/opencode.json`.
-
-## Using in opencode
-
-```
-llama-server/ggml-org/Qwen3.8-27B-GGUF:Q4_K_M
-```
-
 ## Rebuilding
 
 If you move the repo or change branches, delete `llama.cpp/build/` and re-run `./setup.sh`.
