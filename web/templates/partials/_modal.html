@@ -1,0 +1,17 @@
+{% from "partials/_button.html" import button %}
+<div id="modal-root" class="fixed inset-0 z-50 hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-hidden="true">
+  <div id="modal-panel" class="w-full" tabindex="-1">
+    <div id="modal-header">
+      <div id="modal-heading" class="min-w-0">
+        <h2 id="modal-title"></h2>
+        <div id="modal-title-extra"></div>
+      </div>
+      <div id="modal-header-controls">
+        <div id="modal-header-actions"></div>
+        {{ button('', variant='icon', id='modal-close', title='Close', icon='<path d="M18 6 6 18M6 6l12 12"/>') }}
+      </div>
+    </div>
+    <div id="modal-body" class="min-h-0"></div>
+    <div id="modal-footer"></div>
+  </div>
+</div>
