@@ -57,3 +57,18 @@ instance (no clone, reuses the existing build):
 uv sync
 uv run localllm web open
 ```
+
+For frontend development, one command runs the reload-enabled web server and the
+Tailwind watcher together (refresh the browser after changes):
+
+```bash
+uv run localllm web dev
+```
+
+Tailwind uses its pinned standalone executable, cached under the XDG cache directory;
+Node.js and npm are not required. Rebuild and commit the minified production stylesheet
+after changing templates, client-side class strings, or `web/assets/tailwind.css`:
+
+```bash
+uv run python -m localllm.tailwind build
+```

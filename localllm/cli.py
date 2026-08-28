@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -76,6 +77,87 @@ def cmd_serve(args: argparse.Namespace) -> int:
 
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
     return 0
+
+
+def _terminate_group(proc: subprocess.Popen) -> None:
+    if proc.poll() is not None:
+        return
+    try:
+        os.killpg(proc.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        proc.wait()
+
+
+def cmd_dev(args: argparse.Namespace) -> int:
+    inst = resolve_instance(args.home)
+    source_root = Path(__file__).resolve().parent.parent
+    if inst.mode != "dev" or inst.path.resolve() != source_root.resolve():
+        print("error: 'localllm web dev' must run from a source checkout", file=sys.stderr)
+        return 2
+
+    from localllm.tailwind import command as tailwind_command
+
+    print(f"localllm: development instance {inst.path}")
+    stopping = False
+
+    def request_stop(_signum, _frame) -> None:
+        nonlocal stopping
+        stopping = True
+
+    previous_term = signal.signal(signal.SIGTERM, request_stop)
+    tailwind: subprocess.Popen | None = None
+    server: subprocess.Popen | None = None
+    exit_code = 0
+    try:
+        tailwind = subprocess.Popen(
+            tailwind_command(watch=True),
+            cwd=source_root,
+            start_new_session=True,
+        )
+        server = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "web.main:app",
+                "--host",
+                args.host,
+                "--port",
+                str(args.port),
+                "--reload",
+            ],
+            cwd=source_root,
+            start_new_session=True,
+        )
+        while not stopping:
+            tailwind_rc = tailwind.poll()
+            server_rc = server.poll()
+            if tailwind_rc is not None:
+                print(f"localllm: Tailwind watcher exited ({tailwind_rc})", file=sys.stderr)
+                exit_code = tailwind_rc or 1
+                break
+            if server_rc is not None:
+                print(f"localllm: development web server exited ({server_rc})", file=sys.stderr)
+                exit_code = server_rc
+                break
+            time.sleep(0.25)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if server is not None:
+            _terminate_group(server)
+        if tailwind is not None:
+            _terminate_group(tailwind)
+        signal.signal(signal.SIGTERM, previous_term)
+    return exit_code
 
 
 def cmd_open(args: argparse.Namespace) -> int:
@@ -167,6 +249,10 @@ def main(argv: list[str] | None = None) -> int:
     p = websub.add_parser("serve", help="run the web UI in the foreground")
     add_common(p)
     p.set_defaults(func=cmd_serve)
+
+    p = websub.add_parser("dev", help="run the web UI and Tailwind watcher with reload")
+    add_common(p)
+    p.set_defaults(func=cmd_dev)
 
     p = websub.add_parser("open", help="start in background and open the browser")
     add_common(p)
