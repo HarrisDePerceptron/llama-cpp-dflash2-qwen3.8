@@ -1,6 +1,6 @@
-{% from "partials/_macros.html" import icon_card, icon_card_end %}
-{% from "partials/_button.html" import button %}
-{{ icon_card('<path d="M12 7V4M8 4h8"/><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M2 13h2M20 13h2M9.5 12v2M14.5 12v2"/>', 'Agents', col_span='lg:col-span-3') }}
+{% from "components/card.html" import card %}
+{% from "components/button.html" import button %}
+{% call card('<path d="M12 7V4M8 4h8"/><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M2 13h2M20 13h2M9.5 12v2M14.5 12v2"/>', 'Agents', col_span='lg:col-span-3') %}
 <div class="space-y-2.5 text-sm mb-4">
   <div class="flex items-center justify-between gap-3">
     <span class="text-zinc-400">opencode</span>
@@ -12,7 +12,7 @@
   </div>
 </div>
 {{ button('Configure opencode', onclick='opencodeSetup()', block=true) }}
-{{ icon_card_end() }}
+{% endcall %}
 <script type="module">
   import { $, register, API } from '/static/js/core.js';
 

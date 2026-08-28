@@ -1,0 +1,6 @@
+{% macro key_value(label, value_id, value_class="font-mono text-xs text-zinc-300") -%}
+<div class="flex items-center justify-between gap-3">
+  <dt class="text-xs text-zinc-500">{{ label }}</dt>
+  <dd class="{{ value_class }} truncate" id="{{ value_id }}">…</dd>
+</div>
+{%- endmacro %}

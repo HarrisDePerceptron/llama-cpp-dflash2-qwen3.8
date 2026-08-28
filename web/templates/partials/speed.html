@@ -1,5 +1,5 @@
-{% from "partials/_macros.html" import icon_card, icon_card_end %}
-{{ icon_card('<path d="M12 20V10M18 20V4M6 20v-4"/>', 'Speed', status_html='<span class="ml-auto text-[10px] font-mono text-zinc-600" id="spd-live-badge"></span>', col_span='lg:col-span-3') }}
+{% from "components/card.html" import card %}
+{% call card('<path d="M12 20V10M18 20V4M6 20v-4"/>', 'Speed', status_html='<span class="ml-auto text-[10px] font-mono text-zinc-600" id="spd-live-badge"></span>', col_span='lg:col-span-3') %}
 <div class="grid grid-cols-2 gap-4 mb-4">
   <div class="rounded-xl bg-zinc-950/60 border border-zinc-800 p-3.5">
     <div class="text-[10px] uppercase tracking-wider text-zinc-500 mb-2">prompt</div>
@@ -26,7 +26,7 @@
     <span class="text-sm font-mono text-zinc-400" id="spd-predict-avg">—</span>
   </div>
 </div>
-{{ icon_card_end() }}
+{% endcall %}
 <script type="module">
   import { $, register } from '/static/js/core.js';
 

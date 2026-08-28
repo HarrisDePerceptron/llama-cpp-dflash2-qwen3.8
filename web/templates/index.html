@@ -1,4 +1,4 @@
-{% from "partials/_button.html" import button, BTN_BASE, BTN_CLASSES %}
+{% from "components/button.html" import button, BTN_BASE, BTN_CLASSES %}
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -37,18 +37,7 @@ tailwind.config = {
 
 <header class="sticky top-0 z-10 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
-    <svg class="w-6 h-6 shrink-0" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="gem" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stop-color="#4285f8"/>
-          <stop offset="0.35" stop-color="#a142f4"/>
-          <stop offset="0.7" stop-color="#ec407a"/>
-          <stop offset="1" stop-color="#f9ab00"/>
-        </linearGradient>
-      </defs>
-      <path d="M12 1.5c.9 4.9 5.6 9.6 10.5 10.5-4.9.9-9.6 5.6-10.5 10.5-.9-4.9-5.6-9.6-10.5-10.5C6.4 11.1 11.1 6.4 12 1.5Z" fill="url(#gem)"/>
-    </svg>
-    <span class="text-[15px] font-semibold tracking-tight text-white">localllm</span>
+    <img src="/static/images/centrox-logo.png" alt="Centrox AI" class="h-5 w-auto shrink-0">
     <span id="status-pill" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ring-1 ring-inset bg-zinc-800/60 text-zinc-400 ring-zinc-700/60">
       <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
       <span id="status-pill-text">checking…</span>
@@ -71,7 +60,7 @@ tailwind.config = {
   </div>
 </main>
 
-{% include "partials/_modal.html" %}
+{% include "components/modal.html" %}
 {% include "partials/config-modal.html" %}
 {% include "partials/log-modal.html" %}
 {% include "partials/confirm-modal.html" %}

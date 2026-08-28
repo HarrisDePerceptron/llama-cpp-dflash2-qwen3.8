@@ -1,3 +1,129 @@
 <template id="log-modal-template">
   <pre id="log-modal-body" class="console bg-black text-zinc-300 font-mono text-xs leading-relaxed whitespace-pre-wrap break-words h-[70vh] overflow-auto p-4"></pre>
 </template>
+<script type="module">
+import { API, registerTick, stripAnsi } from '/static/js/core.js';
+
+let logModal = null;
+let logClose = null;
+
+const COPY_ICON = '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>';
+const logBadgeStyles = {
+  running: 'bg-amber-500/10 text-amber-400 ring-amber-500/20',
+  done: 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20',
+  error: 'bg-red-500/10 text-red-400 ring-red-500/20',
+  stopped: 'bg-sky-500/10 text-sky-400 ring-sky-500/20',
+};
+
+function setLogModalBadge(session, state) {
+  const badge = session.badge;
+  if (!state || state === 'idle') {
+    badge.hidden = true;
+    return;
+  }
+  badge.hidden = false;
+  badge.textContent = state;
+  badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-mono ring-1 ring-inset '
+    + (logBadgeStyles[state] || 'bg-zinc-800/60 text-zinc-400 ring-zinc-700/60');
+}
+
+function openLogModal({ title, load, stopUrl = null }) {
+  const session = { load, stopUrl, follow: true, last: '', context: null, badge: null };
+  const context = window.Modal.open({
+    templateId: 'log-modal-template',
+    variant: 'log',
+    title,
+    initialFocus: '#modal-close',
+    headerActions: [
+      { id: 'log-modal-stop', label: 'Stop', variant: 'danger-ghost', title: 'Stop job', hidden: true, onClick: stopLogModalJob },
+      { id: 'log-modal-copy', label: '', variant: 'icon', title: 'Copy logs', icon: COPY_ICON, onClick: copyLogModal },
+    ],
+    onMount: (modalContext) => {
+      const badge = document.createElement('span');
+      badge.hidden = true;
+      modalContext.titleExtra.append(badge);
+      session.context = modalContext;
+      session.badge = badge;
+      const body = modalContext.query('#log-modal-body');
+      const onScroll = () => {
+        session.follow = body.scrollHeight - body.scrollTop - body.clientHeight < 40;
+      };
+      body.addEventListener('scroll', onScroll);
+      return () => {
+        body.removeEventListener('scroll', onScroll);
+        if (logModal === session) logModal = null;
+      };
+    },
+    onClose: () => {
+      if (logModal === session) logModal = null;
+      if (logClose === context.close) logClose = null;
+    },
+  });
+
+  logModal = session;
+  logClose = context.close;
+  pollLogModal();
+}
+
+function closeLogModal() {
+  if (logClose) logClose();
+}
+
+async function pollLogModal() {
+  const session = logModal;
+  if (!session) return;
+  try {
+    const snap = await session.load();
+    if (logModal !== session) return;
+    const out = stripAnsi((snap.output || []).join('\n'));
+    const body = session.context.query('#log-modal-body');
+    const pinned = body.scrollHeight - body.scrollTop - body.clientHeight < 40;
+    body.textContent = out;
+    if (session.follow && (pinned || out !== session.last)) body.scrollTop = body.scrollHeight;
+    session.last = out;
+    setLogModalBadge(session, snap.state);
+    session.context.query('#log-modal-stop').hidden = !(session.stopUrl && snap.state === 'running');
+  } catch (error) {
+    // Polling failures are transient; the next shared tick retries.
+  }
+}
+
+function openJobModal(which) {
+  const titles = { setup: 'Install', opencode: 'Configure opencode', uninstall: 'Uninstall' };
+  const stopUrl = which === 'uninstall' ? null : `/api/jobs/${which}/stop`;
+  openLogModal({ title: titles[which], load: () => API.job(which), stopUrl });
+}
+
+async function stopLogModalJob() {
+  const session = logModal;
+  if (!session || !session.stopUrl) return;
+  const btn = session.context.query('#log-modal-stop');
+  btn.disabled = true;
+  try {
+    await API.post(session.stopUrl);
+    await pollLogModal();
+  } finally {
+    if (btn.isConnected) btn.disabled = false;
+  }
+}
+
+function copyLogModal() {
+  const session = logModal;
+  if (!session) return;
+  const text = session.context.query('#log-modal-body').textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = session.context.query('#log-modal-copy');
+    btn.title = 'Copied';
+    setTimeout(() => { if (btn.isConnected) btn.title = 'Copy logs'; }, 1500);
+  });
+}
+
+registerTick(() => { if (logModal) pollLogModal(); });
+
+window.openLogModal = openLogModal;
+window.closeLogModal = closeLogModal;
+window.openJobModal = openJobModal;
+window.stopLogModalJob = stopLogModalJob;
+window.copyLogModal = copyLogModal;
+</script>

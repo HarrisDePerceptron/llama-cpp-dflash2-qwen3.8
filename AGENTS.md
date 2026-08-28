@@ -24,7 +24,8 @@ user service, plus a `localllm` CLI + FastAPI web UI that manages the stack.
   Treat it as a vendored dependency: don't edit it; `setup.sh` re-checks-out the branch.
 - `localllm/` — CLI (`cli.py`) + instance resolution (`instance.py`)
 - `web/` — FastAPI app (`main.py`), stats/status collectors (`system.py`), single-page
-  Jinja/Tailwind UI (`templates/index.html`) on port 8002
+  Jinja/Tailwind UI (`templates/index.html`) on port 8002; atomic template primitives live
+  in `templates/components/`, while complete feature sections live in `templates/partials/`
 - `docs/plans/` — design plans; `.agents/skills/` — repo-local skills (see Skills below)
 
 ## Skills
@@ -34,6 +35,21 @@ Repo-local skills in `.agents/skills/` (managed by `skills-lock.json`; refresh w
 
 - UI/design work (`web/templates/index.html`, any frontend changes): `tailwind-design-system`
 - Server/API work (`web/main.py`, `web/system.py`, routes, responses): `fastapi`
+
+## Frontend UI
+
+- Put one atomic, reusable primitive per file in `web/templates/components/` (for example,
+  button, card, or modal). Compose wrappers with Jinja macros and call blocks; keep API and
+  feature state out of components.
+- Put each complete feature in `web/templates/partials/`. A partial composes components and
+  keeps its HTML and feature-specific `<script type="module">` together in the same file.
+- `components/modal.html` owns the single shared dialog host, appearance, and inline behavior;
+  include it once from `index.html`. Feature modal partials provide only their `<template>` body
+  and controller, opening the host through `window.Modal.open(...)`.
+- Reuse components instead of duplicating markup or Tailwind classes. Do not create companion
+  JavaScript files for partials; expose only necessary entry points on `window`.
+- After frontend changes, compile Jinja templates, syntax-check modules, run `git diff --check`,
+  and smoke-test `curl -s localhost:8002/api/state`.
 
 ## Dev workflow
 

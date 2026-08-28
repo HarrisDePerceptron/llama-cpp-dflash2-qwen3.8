@@ -1,5 +1,7 @@
 # llama-cpp-dflash2
 
+![localllm dashboard showing service, model, GPU, performance, and logs](docs/assets/dashboard.png)
+
 Local llama.cpp server with DFlash2 speculative decoding running Qwen3.8-27B (Q4_K_M), managed as a systemd user service and wired into opencode as a local model provider.
 
 ## Quick start (localllm)

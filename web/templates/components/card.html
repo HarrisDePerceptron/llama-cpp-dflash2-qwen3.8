@@ -1,0 +1,10 @@
+{% macro card(icon_svg, title, status_html="", col_span="") -%}
+<section class="{{ col_span }} bg-zinc-900/70 border border-zinc-800 rounded-2xl p-5 transition-colors hover:border-zinc-700/80">
+  <div class="flex items-center gap-2 mb-4">
+    <svg class="w-4 h-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">{{ icon_svg|safe }}</svg>
+    <h2 class="text-xs font-semibold uppercase tracking-wider text-zinc-400">{{ title }}</h2>
+    {{ status_html|safe }}
+  </div>
+  {{ caller() }}
+</section>
+{%- endmacro %}
