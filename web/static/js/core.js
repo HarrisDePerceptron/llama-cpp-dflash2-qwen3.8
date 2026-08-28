@@ -1,5 +1,7 @@
 import { API } from './api.js';
 
+export { API };
+
 const LLM = window.__LLM__;
 
 export const $ = (id) => document.getElementById(id);
