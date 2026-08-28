@@ -1,172 +1,173 @@
 {% from "components/button.html" import button_icon %}
-<div id="modal-root" class="hidden" role="dialog" aria-modal="true" aria-hidden="true">
-  <div id="modal-panel" tabindex="-1">
-    <div id="modal-header">
-      <div id="modal-heading">
-        <h2 id="modal-title"></h2>
-        <div id="modal-title-extra"></div>
+<template id="modal-host-template">
+  <div id="modal-root" class="hidden" role="dialog" aria-modal="true" aria-hidden="true">
+    <div id="modal-panel" tabindex="-1">
+      <div id="modal-header">
+        <div id="modal-heading">
+          <h2 id="modal-title"></h2>
+          <div id="modal-title-extra"></div>
+        </div>
+        <div id="modal-header-controls">
+          <div id="modal-header-actions"></div>
+          {{ button_icon('', id='modal-close', title='Close', icon='<path d="M18 6 6 18M6 6l12 12"/>') }}
+        </div>
       </div>
-      <div id="modal-header-controls">
-        <div id="modal-header-actions"></div>
-        {{ button_icon('', id='modal-close', title='Close', icon='<path d="M18 6 6 18M6 6l12 12"/>') }}
-      </div>
+      <div id="modal-body"></div>
+      <div id="modal-footer"></div>
     </div>
-    <div id="modal-body"></div>
-    <div id="modal-footer"></div>
   </div>
-</div>
+</template>
 <script type="module">
-  import { $, BTN, BTN_BASE } from '/static/js/core.js';
+import { $, BTN, BTN_BASE } from '/static/js/core.js';
 
-  const ROOT_BASE = 'fixed inset-0 z-50 hidden items-center justify-center p-4';
-  const PANEL_BASE = 'w-full';
-  const HEADER_BASE = 'flex items-center justify-between border-b border-zinc-800';
-  const HEADING_BASE = 'flex items-center min-w-0';
-  const TITLE_BASE = 'text-sm font-semibold text-zinc-100';
-  const HEADER_CONTROLS_BASE = 'flex items-center shrink-0';
-  const HEADER_ACTIONS_BASE = 'flex items-center';
-  const FOOTER_BASE = 'flex items-center justify-end gap-2 border-t border-zinc-800';
+const ROOT_BASE = 'fixed inset-0 z-50 hidden items-center justify-center p-4';
+const PANEL_BASE = 'w-full';
+const HEADER_BASE = 'flex items-center justify-between border-b border-zinc-800';
+const HEADING_BASE = 'flex items-center min-w-0';
+const TITLE_BASE = 'text-sm font-semibold text-zinc-100';
+const HEADER_CONTROLS_BASE = 'flex items-center shrink-0';
+const HEADER_ACTIONS_BASE = 'flex items-center';
+const FOOTER_BASE = 'flex items-center justify-end gap-2 border-t border-zinc-800';
 
-  const VARIANTS = {
-    config: {
-      root: 'bg-black/60 backdrop-blur-sm',
-      panel: 'bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg shadow-2xl',
-      header: 'px-5 py-4',
-      heading: 'gap-2.5',
-      title: '',
-      headerControls: 'gap-1',
-      headerActions: 'gap-1',
-      footer: 'px-5 py-3',
-      showHeader: true,
-    },
-    confirm: {
-      root: 'bg-black/70',
-      panel: 'max-w-md rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl',
-      header: 'px-5 py-4',
-      heading: 'gap-2.5',
-      title: '',
-      headerControls: 'gap-1',
-      headerActions: 'gap-1',
-      footer: 'px-5 py-4',
-      showHeader: true,
-    },
-    log: {
-      root: 'bg-black/60 backdrop-blur-sm',
-      panel: 'bg-zinc-900 border border-zinc-800 rounded-2xl max-w-3xl shadow-2xl flex flex-col overflow-hidden',
-      header: 'px-5 py-3.5',
-      heading: 'gap-2.5',
-      title: 'truncate',
-      headerControls: 'gap-1',
-      headerActions: 'gap-1',
-      footer: '',
-      showHeader: true,
-    },
+const VARIANTS = {
+  standard: {
+    root: 'bg-black/60 backdrop-blur-sm',
+    panel: 'bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg shadow-2xl',
+    header: 'px-5 py-4',
+    heading: 'gap-2.5',
+    title: '',
+    headerControls: 'gap-1',
+    headerActions: 'gap-1',
+    footer: 'px-5 py-3',
+    showHeader: true,
+  },
+  compact: {
+    root: 'bg-black/70',
+    panel: 'max-w-md rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl',
+    header: 'px-5 py-4',
+    heading: 'gap-2.5',
+    title: '',
+    headerControls: 'gap-1',
+    headerActions: 'gap-1',
+    footer: 'px-5 py-4',
+    showHeader: true,
+  },
+  wide: {
+    root: 'bg-black/60 backdrop-blur-sm',
+    panel: 'bg-zinc-900 border border-zinc-800 rounded-2xl max-w-3xl shadow-2xl flex flex-col overflow-hidden',
+    header: 'px-5 py-3.5',
+    heading: 'gap-2.5',
+    title: 'truncate',
+    headerControls: 'gap-1',
+    headerActions: 'gap-1',
+    footer: '',
+    showHeader: true,
+  },
+};
+
+const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+const stack = [];
+
+function classes(...parts) {
+  return parts.filter(Boolean).join(' ');
+}
+
+function host(root) {
+  return {
+    root,
+    panel: root.querySelector('#modal-panel'),
+    header: root.querySelector('#modal-header'),
+    heading: root.querySelector('#modal-heading'),
+    title: root.querySelector('#modal-title'),
+    titleExtra: root.querySelector('#modal-title-extra'),
+    headerControls: root.querySelector('#modal-header-controls'),
+    headerActions: root.querySelector('#modal-header-actions'),
+    closeButton: root.querySelector('#modal-close'),
+    body: root.querySelector('#modal-body'),
+    footer: root.querySelector('#modal-footer'),
   };
+}
 
-  const MODAL_BUTTONS = {
-    'confirm-cancel': 'px-3 py-1.5 rounded-lg text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors',
-  };
+function visibleFocusables(root) {
+  return Array.from(root.querySelectorAll(FOCUSABLE))
+    .filter((el) => !el.disabled && !el.closest('[hidden]') && el.getAttribute('aria-hidden') !== 'true');
+}
 
-  const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
-  let active = null;
-
-  function classes(...parts) {
-    return parts.filter(Boolean).join(' ');
+function makeButton(action) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  if (action.id) button.id = action.id;
+  if (action.title) {
+    button.title = action.title;
+    if (!action.label) button.setAttribute('aria-label', action.title);
   }
+  button.className = classes(BTN_BASE, BTN[action.variant || 'primary']);
+  button.disabled = Boolean(action.disabled);
+  button.hidden = Boolean(action.hidden);
 
-  function host() {
-    return {
-      root: $('modal-root'),
-      panel: $('modal-panel'),
-      header: $('modal-header'),
-      heading: $('modal-heading'),
-      title: $('modal-title'),
-      titleExtra: $('modal-title-extra'),
-      headerControls: $('modal-header-controls'),
-      headerActions: $('modal-header-actions'),
-      closeButton: $('modal-close'),
-      body: $('modal-body'),
-      footer: $('modal-footer'),
-    };
+  if (action.icon) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '15');
+    svg.setAttribute('height', '15');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = action.icon;
+    button.append(svg);
   }
+  if (action.label) button.append(document.createTextNode(action.label));
+  return button;
+}
 
-  function visibleFocusables(root) {
-    return Array.from(root.querySelectorAll(FOCUSABLE))
-      .filter((el) => !el.disabled && !el.closest('[hidden]') && el.getAttribute('aria-hidden') !== 'true');
+function renderActions(container, actions, context) {
+  container.replaceChildren();
+  for (const action of actions) {
+    const button = makeButton(action);
+    button.addEventListener('click', (event) => {
+      if (action.close) {
+        context.close(action.result);
+        return;
+      }
+      if (action.onClick) action.onClick({ ...context, button, event });
+    });
+    container.append(button);
   }
+}
 
-  function makeButton(action) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    if (action.id) button.id = action.id;
-    if (action.title) {
-      button.title = action.title;
-      if (!action.label) button.setAttribute('aria-label', action.title);
-    }
-    button.className = MODAL_BUTTONS[action.variant]
-      || classes(BTN_BASE, BTN[action.variant || 'primary']);
-    button.disabled = Boolean(action.disabled);
-    button.hidden = Boolean(action.hidden);
-
-    if (action.icon) {
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.setAttribute('width', '15');
-      svg.setAttribute('height', '15');
-      svg.setAttribute('viewBox', '0 0 24 24');
-      svg.setAttribute('fill', 'none');
-      svg.setAttribute('stroke', 'currentColor');
-      svg.setAttribute('stroke-width', '2');
-      svg.setAttribute('stroke-linecap', 'round');
-      svg.setAttribute('stroke-linejoin', 'round');
-      svg.setAttribute('aria-hidden', 'true');
-      svg.innerHTML = action.icon;
-      button.append(svg);
-    }
-    if (action.label) button.append(document.createTextNode(action.label));
-    return button;
+function onKeydown(event) {
+  const top = stack[stack.length - 1];
+  if (!top) return;
+  if (event.key === 'Escape' && top.closeOnEscape) {
+    event.preventDefault();
+    top.close(top.closeResult);
+    return;
   }
-
-  function renderActions(container, actions, context) {
-    container.replaceChildren();
-    for (const action of actions) {
-      const button = makeButton(action);
-      button.addEventListener('click', (event) => {
-        if (action.close) {
-          context.close(action.result);
-          return;
-        }
-        if (action.onClick) action.onClick({ ...context, button, event });
-      });
-      container.append(button);
-    }
+  if (event.key !== 'Tab') return;
+  const focusable = visibleFocusables(top.root);
+  if (!focusable.length) {
+    event.preventDefault();
+    top.ui.panel.focus();
+    return;
   }
-
-  function resetHost(ui) {
-    ui.root.className = ROOT_BASE;
-    ui.root.setAttribute('aria-hidden', 'true');
-    ui.root.setAttribute('aria-labelledby', 'modal-title');
-    ui.panel.className = PANEL_BASE;
-    ui.header.className = '';
-    ui.header.hidden = false;
-    ui.heading.className = 'min-w-0';
-    ui.title.className = '';
-    ui.title.textContent = '';
-    ui.titleExtra.className = '';
-    ui.titleExtra.replaceChildren();
-    ui.headerControls.className = '';
-    ui.headerActions.className = '';
-    ui.headerActions.replaceChildren();
-    ui.closeButton.hidden = false;
-    ui.body.className = 'min-h-0';
-    ui.body.replaceChildren();
-    ui.footer.className = '';
-    ui.footer.hidden = false;
-    ui.footer.replaceChildren();
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
   }
+}
 
-  function openModal({
+function openModal(config = {}) {
+  const {
     templateId,
-    variant = 'config',
+    variant = 'standard',
     title = '',
     labelledBy = 'modal-title',
     headerActions = [],
@@ -178,107 +179,94 @@
     initialFocus,
     onMount,
     onClose,
-  } = {}) {
-    const ui = host();
-    const style = VARIANTS[variant];
-    const template = $(templateId);
-    if (!style) throw new Error(`Unknown modal variant: ${variant}`);
-    if (!(template instanceof HTMLTemplateElement)) throw new Error(`Modal template not found: ${templateId}`);
-    if (active) active.close(active.closeResult);
+  } = config;
 
-    resetHost(ui);
-    ui.root.className = classes(ROOT_BASE, style.root);
-    ui.panel.className = classes(PANEL_BASE, style.panel);
-    ui.header.className = classes(HEADER_BASE, style.header);
-    ui.heading.className = classes(HEADING_BASE, style.heading);
-    ui.title.className = classes(TITLE_BASE, style.title);
-    ui.title.textContent = title;
-    ui.titleExtra.className = 'min-w-0';
-    ui.headerControls.className = classes(HEADER_CONTROLS_BASE, style.headerControls);
-    ui.headerActions.className = classes(HEADER_ACTIONS_BASE, style.headerActions);
-    ui.header.hidden = !style.showHeader;
-    ui.closeButton.hidden = !showClose;
-    ui.footer.className = classes(FOOTER_BASE, style.footer);
-    ui.footer.hidden = footerActions.length === 0;
-    ui.root.setAttribute('aria-labelledby', labelledBy);
-    ui.body.append(template.content.cloneNode(true));
+  const style = VARIANTS[variant];
+  if (!style) throw new Error(`Unknown modal variant: ${variant}`);
+  const template = $(templateId);
+  if (!(template instanceof HTMLTemplateElement)) throw new Error(`Modal template not found: ${templateId}`);
 
-    const previouslyFocused = document.activeElement;
-    let closed = false;
-    let cleanup = null;
+  const hostTemplate = $('modal-host-template');
+  const root = hostTemplate.content.firstElementChild.cloneNode(true);
+  const ui = host(root);
 
-    const context = {
-      ...ui,
-      query: (selector) => ui.root.querySelector(selector),
-      close,
-    };
+  root.className = classes(ROOT_BASE, style.root);
+  root.setAttribute('aria-hidden', 'true');
+  root.setAttribute('aria-labelledby', labelledBy);
+  ui.panel.className = classes(PANEL_BASE, style.panel);
+  ui.header.className = classes(HEADER_BASE, style.header);
+  ui.heading.className = classes(HEADING_BASE, style.heading);
+  ui.title.className = classes(TITLE_BASE, style.title);
+  ui.title.textContent = title;
+  ui.titleExtra.className = 'min-w-0';
+  ui.headerControls.className = classes(HEADER_CONTROLS_BASE, style.headerControls);
+  ui.headerActions.className = classes(HEADER_ACTIONS_BASE, style.headerActions);
+  ui.header.hidden = !style.showHeader;
+  ui.closeButton.hidden = !showClose;
+  ui.footer.className = classes(FOOTER_BASE, style.footer);
+  ui.footer.hidden = footerActions.length === 0;
+  ui.body.className = 'min-h-0';
+  ui.body.append(template.content.cloneNode(true));
 
-    function close(result) {
-      if (closed) return;
-      closed = true;
-      ui.root.removeEventListener('click', onBackdrop);
-      document.removeEventListener('keydown', onKeydown);
-      if (cleanup) cleanup();
-      if (active && active.close === close) active = null;
-      resetHost(ui);
-      if (previouslyFocused && previouslyFocused !== document.body && typeof previouslyFocused.focus === 'function') {
-        previouslyFocused.focus();
-      }
-      if (onClose) onClose(result);
+  const previouslyFocused = document.activeElement;
+  let closed = false;
+  let cleanup = null;
+
+  const context = {
+    ...ui,
+    query: (selector) => root.querySelector(selector),
+    close,
+  };
+
+  function close(result) {
+    if (closed) return;
+    closed = true;
+    root.removeEventListener('click', onBackdrop);
+    if (cleanup) cleanup();
+    const index = stack.indexOf(entry);
+    if (index !== -1) stack.splice(index, 1);
+    root.remove();
+    if (stack.length === 0) document.removeEventListener('keydown', onKeydown);
+    if (previouslyFocused && previouslyFocused !== document.body && typeof previouslyFocused.focus === 'function') {
+      previouslyFocused.focus();
     }
-
-    function onBackdrop(event) {
-      if (closeOnBackdrop && event.target === ui.root) close(closeResult);
-    }
-
-    function onKeydown(event) {
-      if (event.key === 'Escape' && closeOnEscape) {
-        event.preventDefault();
-        close(closeResult);
-        return;
-      }
-      if (event.key !== 'Tab') return;
-      const focusable = visibleFocusables(ui.root);
-      if (!focusable.length) {
-        event.preventDefault();
-        ui.panel.focus();
-        return;
-      }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    renderActions(ui.headerActions, headerActions, context);
-    renderActions(ui.footer, footerActions, context);
-    ui.root.classList.remove('hidden');
-    ui.root.classList.add('flex');
-    ui.root.setAttribute('aria-hidden', 'false');
-    ui.root.addEventListener('click', onBackdrop);
-    document.addEventListener('keydown', onKeydown);
-    active = { close, closeResult };
-    cleanup = onMount ? onMount(context) : null;
-
-    const focusTarget = typeof initialFocus === 'string' ? context.query(initialFocus) : initialFocus;
-    const firstFocusable = focusTarget || visibleFocusables(ui.root)[0] || ui.panel;
-    firstFocusable.focus();
-
-    return context;
+    if (onClose) onClose(result);
   }
 
-  function closeModal(result) {
-    if (active) active.close(result);
+  function onBackdrop(event) {
+    if (closeOnBackdrop && event.target === root) close(closeResult);
   }
 
-  $('modal-close').addEventListener('click', () => {
-    if (active) active.close(active.closeResult);
-  });
+  const entry = { root, ui, close, closeResult, closeOnEscape };
 
-  window.Modal = Object.freeze({ open: openModal, close: closeModal });
+  renderActions(ui.headerActions, headerActions, context);
+  renderActions(ui.footer, footerActions, context);
+  ui.closeButton.addEventListener('click', () => close(closeResult));
+
+  root.style.zIndex = String(100 + stack.length);
+  root.classList.remove('hidden');
+  root.classList.add('flex');
+  root.setAttribute('aria-hidden', 'false');
+  root.addEventListener('click', onBackdrop);
+
+  const wasEmpty = stack.length === 0;
+  document.body.appendChild(root);
+  stack.push(entry);
+  if (wasEmpty) document.addEventListener('keydown', onKeydown);
+
+  cleanup = onMount ? onMount(context) : null;
+
+  const focusTarget = typeof initialFocus === 'string' ? context.query(initialFocus) : initialFocus;
+  const firstFocusable = focusTarget || visibleFocusables(root)[0] || ui.panel;
+  firstFocusable.focus();
+
+  return context;
+}
+
+function closeModal(result) {
+  const top = stack[stack.length - 1];
+  if (top) top.close(result);
+}
+
+window.Modal = Object.freeze({ open: openModal, close: closeModal });
 </script>

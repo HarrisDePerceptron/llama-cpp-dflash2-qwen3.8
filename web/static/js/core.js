@@ -9,6 +9,7 @@ export const BTN = {
   'secondary': 'px-3.5 py-1.5 text-sm font-medium rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 disabled:opacity-50 disabled:cursor-not-allowed',
   'danger': 'px-3.5 py-1.5 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-500 text-white disabled:opacity-50 disabled:cursor-not-allowed',
   'danger-ghost': 'px-3.5 py-1.5 text-sm font-medium rounded-lg text-red-400 ring-1 ring-inset ring-red-500/30 hover:bg-red-500/10 disabled:opacity-50 disabled:cursor-not-allowed',
+  'ghost': 'px-3 py-1.5 rounded-lg text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors',
   'icon': 'p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed',
 };
 

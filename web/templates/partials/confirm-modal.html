@@ -15,12 +15,12 @@ function openConfirm({ title, message, confirmLabel = 'Confirm', danger = false 
   return new Promise((resolve) => {
     window.Modal.open({
       templateId: 'confirm-modal-template',
-      variant: 'confirm',
+      variant: 'compact',
       title,
       closeResult: false,
       initialFocus: '#confirm-cancel',
       footerActions: [
-        { id: 'confirm-cancel', label: 'Cancel', variant: 'confirm-cancel', close: true, result: false },
+        { id: 'confirm-cancel', label: 'Cancel', variant: 'ghost', close: true, result: false },
         { id: 'confirm-ok', label: confirmLabel, variant: danger ? 'danger' : 'primary', close: true, result: true },
       ],
       onMount: ({ query }) => {

@@ -31,7 +31,7 @@ function openLogModal({ title, load, stopUrl = null }) {
   const session = { load, stopUrl, follow: true, last: '', context: null, badge: null };
   const context = window.Modal.open({
     templateId: 'log-modal-template',
-    variant: 'log',
+    variant: 'wide',
     title,
     initialFocus: '#modal-close',
     headerActions: [
